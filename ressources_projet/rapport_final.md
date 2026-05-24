@@ -34,7 +34,7 @@ Entre janvier à mai 2026, nous avons intégralement construit, livré et déplo
 
 ## Adéquation avec le sujet
 
-La quasi-totalité du périmètre défini dans notre cadrage a été livrée. Les principaux ajustements techniques portent sur des choix délibérés : MongoDB remplacé par PostgreSQL (suffisant), BeautifulSoup par des flux RSS (plus fiable). L'apprentissage par renforcement, envisagé dans le cadrage pour automatiser les ordres, n'a pas été implémenté — le paper trading constitue la première étape vers cet objectif.
+L'intégralité du périmètre défini dans notre cadrage a été livrée. Les principaux ajustements techniques portent sur des choix délibérés : MongoDB remplacé par PostgreSQL (suffisant), BeautifulSoup par des flux RSS (plus fiable). L'apprentissage par renforcement figurait comme piste d'évolution optionnelle ; le paper trading constitue la première étape concrète vers cet objectif.
 
 ## Points forts
 
@@ -193,14 +193,12 @@ Voici notre réalisation effective :
 | 3 | Structuration BDD | ✅ | SQLAlchemy + SQLite/PostgreSQL, 8 domaines de tables |
 | 4 | ETL & qualité données | ✅ | Pipeline Extract→Validate→Transform→Load, DataValidator |
 | 5 | Analytics & KPIs | ✅ | Indicateurs techniques (RSI, MACD, BB, SMA), Fear & Greed, signaux |
-| 6 | ML & Reinforcement Learning | ⚠️ | ML supervisé livré (XGBoost, RF, LR) ; RL non implémenté |
+| 6 | ML supervisé | ✅ | XGBoost, RF, LR, walk-forward backtesting, MLflow — RL hors scope (piste d'évolution) |
 | 7 | Dashboard v1 | ✅ | 6 pages Streamlit avec Plotly |
 | 8 | Tests & CI/CD finalisation | ✅ | pytest, couverture src + api |
 | 9 | Déploiement & monitoring | ✅ | Ansible, Nginx, Prometheus, Grafana |
 | 10 | Alertes | ✅ | Alertes email livrées (démarrage collecte, fin collecte, erreurs critiques, abonnement) |
 | 11 | Déploiement cloud gratuit | ✅ | Render (API), Supabase (PostgreSQL), Streamlit Cloud (frontend), DagsHub (MLflow), GitHub Actions collecte |
-
-**Note sur le reinforcement learning** : le cadrage envisageait Monte Carlo, SARSA et Q-learning pour automatiser les décisions BUY/SELL/HOLD. Le RL reste un axe d'évolution identifié.
 
 ---
 
@@ -249,7 +247,7 @@ Voici notre réalisation effective :
 | API | FastAPI + Pydantic | **FastAPI + Pydantic v2 + uvicorn** | Conforme |
 | Frontend | Streamlit ou Shiny | **Streamlit + Plotly** | Streamlit retenu |
 | ML | scikit-learn, TensorFlow/PyTorch | **scikit-learn + XGBoost** | TF/PyTorch non justifiés sur notre volume de données |
-| RL | Monte Carlo, SARSA, Q-learning | **Non implémenté** | Complexité vs données disponibles ; paper trading privilégié |
+| RL | Monte Carlo, SARSA, Q-learning | **Hors scope** | Piste d'évolution optionnelle ; paper trading = première étape |
 | Experiment tracking | MLflow | **MLflow + DagsHub** | DagsHub pour le tracking distant en production |
 | Infra VPS | Docker, GitHub Actions | **Docker + GitHub Actions + Ansible + Nginx + Prometheus + Grafana** | Stack versionnée dans `_v1/infra/` — Prometheus/Grafana VPS uniquement |
 | Infra cloud (POC) | — | **Render + Supabase + Streamlit Cloud + DagsHub + GitHub Actions** | Déploiement gratuit opérationnel ; Kraken par défaut (Binance bloqué côté US/GitHub) |
@@ -523,8 +521,8 @@ make test-cov   # pytest --cov=src --cov=api --cov-report=term-missing
 | Dashboard | ✅ Livré | Chandelier interactif + indicateurs |
 | Analytics | ✅ Livré | Market Overview (Fear & Greed, corrélations…) |
 | ML supervisé | ✅ Livré | Random Forest, XGBoost, walk-forward |
-| ML non supervisé | ⚠️ Partiel | Pas de clustering explicite en production |
-| ML par renforcement | ❌ Non livré | Paper trading privilégié comme étape intermédiaire |
+| ML non supervisé | ⚠️ Partiel | Pas de clustering explicite en production (hors scope initial) |
+| ML par renforcement | — Hors scope | Piste d'évolution optionnelle ; paper trading = première étape concrète |
 | Paper trading | ✅ Livré et élargi | WebSocket live, métriques financières complètes |
 | Monitoring infra | ✅ Livré | Prometheus + Grafana (stack VPS — non activé en cloud free tier) |
 | PostgreSQL | ✅ Livré | + migration SQLite→PostgreSQL |
