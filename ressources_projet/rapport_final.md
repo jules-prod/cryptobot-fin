@@ -2,8 +2,9 @@
 
 **Auteurs** : Jules Willard — Mikaël Jayet  
 **Formation** : DataScientest — Cursus Data Engineer / Data Scientist  
-**Période** : Octobre 2025 – Mai 2026  
-**Soutenance** : Juin 2026
+**Période** : Octobre 2025 – Juin 2026  
+**Soutenance** : Juin 2026  
+**Version** : V3 — mise à jour mai 2026
 
 ---
 
@@ -11,35 +12,41 @@
 
 ## Contexte et ambition
 
-Dans le cadre de notre formation DataScientest, nous avons conduit de bout en bout un projet fil rouge autour des marchés crypto : de la définition du cahier des charges jusqu'au déploiement en production. L'objectif fixé par le sujet était de créer *"un bot de trading basé sur un modèle de Machine Learning qui investira sur les marchés crypto"* — en montrant notre capacité à définir un cahier des charges, à implémenter une solution technique complète et à assurer sa mise en production avec monitoring.
+Dans le cadre de notre formation DataScientest, nous avons conduit de bout en bout un projet fil rouge autour des marchés crypto : de la définition du cahier des charges jusqu'au déploiement en production. 
+
+Triple objectif :
+- créer *"un bot de trading basé sur un modèle de Machine Learning qui investira sur les marchés crypto"* 
+- démontrer notre capacité à définir un cahier des charges, à implémenter une solution technique complète et à assurer sa mise en production avec monitoring.
 
 Nous avons structuré notre réponse autour d'une plateforme intégrée baptisée **Crypto Bot**, adressant trois personas identifiés en phase de discovery : Noah (trader indépendant), Sarah (journaliste financière) et Aleksandar (investisseur débutant).
 
 ## Ce que nous avons livré
 
-En sept mois (janvier à mai 2026), nous avons intégralement construit, livré et déployé la plateforme. Elle couvre l'ensemble du pipeline, de la collecte brute jusqu'à l'interface utilisateur :
+Entre janvier à mai 2026, nous avons intégralement construit, livré et déployé la plateforme. Elle couvre l'ensemble du pipeline, de la collecte brute jusqu'à l'interface utilisateur :
 
 - **Pipeline ETL** multi-exchange (Binance, Kraken, Coinbase) avec bougies OHLCV, tickers, données CoinGecko et actualités RSS
 - **API REST FastAPI** — 30+ endpoints couvrant toutes les fonctionnalités
 - **Dashboard Streamlit** — 6 pages : chandelier, Market Overview, signaux BUY/SELL/HOLD, veille NLP, backtesting ML, paper trading
-- **Moteur ML** — walk-forward backtesting, XGBoost/Random Forest/Régression Logistique, suivi MLflow
+- **Moteur ML** — walk-forward backtesting, XGBoost/Random Forest/Régression Logistique, suivi MLflow (tracking distant DagsHub)
 - **Paper trading temps réel** — WebSocket Binance, portefeuilles fictifs, P&L live
-- **Infrastructure production** — Docker, Nginx, Ansible, Prometheus + Grafana 4 dashboards, domaine `monpetitbet.fr`
+- **Infrastructure VPS** — Docker, Nginx, Ansible, Prometheus + Grafana 4 dashboards (stack versionnée dans `_v1/infra/`)
+- **Déploiement cloud POC** — API sur Render (free tier), base PostgreSQL Supabase, frontend Streamlit Cloud (`https://nubxasqsgjdunghlifcfzn.streamlit.app/`), collecte quotidienne automatisée via GitHub Actions
 
 ## Adéquation avec le sujet
 
-La quasi-totalité des livrables attendus a été produite. Les principaux ajustements techniques portent sur des choix délibérés : MongoDB remplacé par PostgreSQL (suffisant), BeautifulSoup par des flux RSS (plus fiable). L'apprentissage par renforcement, envisagé dans le cadrage pour automatiser les ordres, n'a pas été implémenté — le paper trading constitue la première étape vers cet objectif.
+La quasi-totalité du périmètre défini dans notre cadrage a été livrée. Les principaux ajustements techniques portent sur des choix délibérés : MongoDB remplacé par PostgreSQL (suffisant), BeautifulSoup par des flux RSS (plus fiable). L'apprentissage par renforcement, envisagé dans le cadrage pour automatiser les ordres, n'a pas été implémenté — le paper trading constitue la première étape vers cet objectif.
 
 ## Points forts
 
-La plateforme se distingue par la complétude de sa chaîne de valeur : 
+La plateforme couvre une chaîne de valeur complète : 
 - collecte automatisée jusqu'aux signaux actionnables, tout est connecté en temps réel
 - adoption dès le premier jour d'une CI/CD, des branches protégées et des tests automatiques — une rigueur d'ingénierie qui a évité la dette technique
-- paper trading avec WebSocket Binance et infrastructure Ansible/Grafana 
+- paper trading avec WebSocket Binance et infrastructure Ansible/Grafana (stack VPS)
+- déploiement cloud POC opérationnel (Render + Supabase + Streamlit Cloud + DagsHub) avec collecte quotidienne automatisée et alertes email matin
 
 ## Perspectives
 
-Apprentissage par renforcement pour automatiser les décisions de trading, données on-chain, authentification JWT, activation SSL et mise en production complète sur `monpetitbet.fr`.
+Apprentissage par renforcement pour automatiser les décisions de trading, données on-chain, authentification JWT. La plateforme est accessible en POC via Render (API) et Streamlit Cloud (`https://nubxasqsgjdunghlifcfzn.streamlit.app/`) ; la prochaine étape est une mise en production complète sur VPS avec la stack Ansible/Nginx/Prometheus/Grafana déjà versionnée.
 
 ---
 ---
@@ -131,7 +138,7 @@ Nous avons identifié et analysé une dizaine de solutions existantes :
 | **Quantify Crypto** | Data viz | Heatmaps, analytics | Oui |
 | **Dune Analytics** | Data on-chain | SQL-like sur données blockchain | Oui |
 
-**Enseignements du benchmark** : Les solutions existantes sont soit trop coûteuses pour un usage individuel, soit trop spécialisées (uniquement on-chain, uniquement signaux techniques, ou uniquement trading automatisé). Aucune ne combine dans une même plateforme open-source la collecte ETL, l'analyse NLP de news, les signaux techniques, le backtesting ML et le paper trading. C'est notre angle de différenciation.
+**Enseignements du benchmark** : Les solutions existantes sont soit coûteuses pour un usage individuel, souvent très spécialisées (uniquement on-chain, uniquement signaux techniques, ou uniquement trading automatisé). Aucune ne combine dans une même plateforme open-source la collecte ETL, l'analyse NLP de news, les signaux techniques, le backtesting ML et le paper trading.
 
 ### 2.4 Cadre réglementaire identifié
 
@@ -169,16 +176,15 @@ Nous avons adopté un workflow Git structuré dès le premier jour :
 
 - **Branches protégées** : `main` (production) et `dev` (intégration)
 - **Feature branches** : une branche par fonctionnalité, mergée via Pull Request
-- **70+ Pull Requests** ouvertes et mergées sur la durée du projet
+- **88+ Pull Requests** ouvertes et mergées sur la durée du projet
 - **CI/CD** via GitHub Actions : tests automatiques sur chaque PR avant merge
-- **Convention de commits** : messages descriptifs en français, avec préfixes (`feat`, `fix`, `chore`)
-- **Documentation** : README, docs/ et diagrammes UML maintenus en parallèle du code
+- **Documentation** : README, docs/ maintenus en parallèle du code
 
 ---
 
-## 4. Roadmap prévue et réalisée
+## 4. Roadmap réalisée
 
-Le sujet DataScientest définissait une roadmap technique en 10 sprints. Voici notre réalisation effective :
+Voici notre réalisation effective :
 
 | Sprint | Thème prévu | Statut | Réalisation effective |
 |---|---|---|---|
@@ -190,10 +196,11 @@ Le sujet DataScientest définissait une roadmap technique en 10 sprints. Voici n
 | 6 | ML & Reinforcement Learning | ⚠️ | ML supervisé livré (XGBoost, RF, LR) ; RL non implémenté |
 | 7 | Dashboard v1 | ✅ | 6 pages Streamlit avec Plotly |
 | 8 | Tests & CI/CD finalisation | ✅ | pytest, couverture src + api |
-| 9 | Déploiement & monitoring | ✅ | Ansible, Nginx, Prometheus, Grafana (4 dashboards) |
-| 10 | Alertes & chatbot (optionnel) | ⚠️ | Alertes email livrées ; chatbot LLM non implémenté |
+| 9 | Déploiement & monitoring | ✅ | Ansible, Nginx, Prometheus, Grafana |
+| 10 | Alertes | ✅ | Alertes email livrées (démarrage collecte, fin collecte, erreurs critiques, abonnement) |
+| 11 | Déploiement cloud gratuit | ✅ | Render (API), Supabase (PostgreSQL), Streamlit Cloud (frontend), DagsHub (MLflow), GitHub Actions collecte |
 
-**Note sur le reinforcement learning** : le sujet envisageait Monte Carlo, SARSA et Q-learning pour automatiser les décisions BUY/SELL/HOLD. Le RL reste un axe d'évolution identifié.
+**Note sur le reinforcement learning** : le cadrage envisageait Monte Carlo, SARSA et Q-learning pour automatiser les décisions BUY/SELL/HOLD. Le RL reste un axe d'évolution identifié.
 
 ---
 
@@ -238,13 +245,15 @@ Le sujet DataScientest définissait une roadmap technique en 10 sprints. Voici n
 |---|---|---|---|
 | Collecte | requests, BeautifulSoup, python-binance | **ccxt, feedparser** | ccxt : multi-exchange unifié ; RSS : plus fiable que le scraping HTML |
 | Sentiment/NLP | scikit-learn TF-IDF | **scikit-learn TF-IDF + vaderSentiment** | Conforme + ajout VADER pour scoring continu |
-| Stockage | PostgreSQL + MongoDB | **SQLAlchemy + SQLite/PostgreSQL** | MongoDB non nécessaire ; PostgreSQL couvre tous les besoins |
+| Stockage | PostgreSQL + MongoDB | **SQLAlchemy + SQLite/PostgreSQL + Supabase** | MongoDB non nécessaire ; Supabase pour la prod cloud |
 | API | FastAPI + Pydantic | **FastAPI + Pydantic v2 + uvicorn** | Conforme |
-| Frontend | Streamlit ou Shiny | **Streamlit + Plotly** | Streamlit retenu (maturité, communauté, intégration Python) |
+| Frontend | Streamlit ou Shiny | **Streamlit + Plotly** | Streamlit retenu |
 | ML | scikit-learn, TensorFlow/PyTorch | **scikit-learn + XGBoost** | TF/PyTorch non justifiés sur notre volume de données |
 | RL | Monte Carlo, SARSA, Q-learning | **Non implémenté** | Complexité vs données disponibles ; paper trading privilégié |
-| Experiment tracking | MLflow | **MLflow** | Conforme |
-| Infra | Docker, GitHub Actions | **Docker + GitHub Actions + Ansible + Nginx + Prometheus + Grafana** | Au-delà du cadrage initial |
+| Experiment tracking | MLflow | **MLflow + DagsHub** | DagsHub pour le tracking distant en production |
+| Infra VPS | Docker, GitHub Actions | **Docker + GitHub Actions + Ansible + Nginx + Prometheus + Grafana** | Stack versionnée dans `_v1/infra/` — Prometheus/Grafana VPS uniquement |
+| Infra cloud (POC) | — | **Render + Supabase + Streamlit Cloud + DagsHub + GitHub Actions** | Déploiement gratuit opérationnel ; Kraken par défaut (Binance bloqué côté US/GitHub) |
+| Dev | — | **Dev Container (.devcontainer)** | Environnement de développement reproductible |
 
 ### 5.3 APIs retenues
 
@@ -366,7 +375,6 @@ Notifications SMTP (Gmail) pour les événements clés :
 Composants :
 - `PaperTrader` : moteur métier (portefeuilles, P&L, gestion positions)
 - `LivePriceCache` : singleton thread-safe alimenté par WebSocket Binance
-- 8 endpoints REST dédiés
 - Rafraîchissement automatique toutes les 5s (streamlit-autorefresh)
 
 ---
@@ -392,11 +400,22 @@ Nous avons conçu et versionné une infrastructure de déploiement production co
 
 - **Ansible** : provision VPS vierge (packages, swap 2G, UFW, Fail2Ban), déploiement via rsync, sauvegardes quotidiennes, SSL Let's Encrypt
 - **Nginx** : reverse proxy avec rate limiting (30 req/s API), support WebSocket Streamlit, headers de sécurité
-- **Prometheus + Grafana** : 4 dashboards de monitoring — API overview, business metrics, PostgreSQL, ressources système — scraping toutes les 15s
-- **Services prod** : TimescaleDB, MinIO (artifacts MLflow), API, Frontend, ETL worker, ML worker, Prometheus, Grafana
-- **Domaine** : `monpetitbet.fr`
+- **Prometheus + Grafana** : 4 dashboards de monitoring — API overview, business metrics, PostgreSQL, ressources système — scraping toutes les 15s (stack VPS uniquement, non activée en cloud)
+- **Services VPS** : TimescaleDB, MinIO (artifacts MLflow), API, Frontend, ETL worker, ML worker, Prometheus, Grafana
 
-### 7.4 CI/CD
+### 7.4 Déploiement cloud POC
+
+En parallèle de la stack VPS, la plateforme est accessible via un déploiement cloud gratuit :
+
+- **Render** (free tier) — API FastAPI, déployée en continu via `render.yaml`
+- **Supabase** — PostgreSQL managé en production
+- **Streamlit Cloud** — frontend accessible à `https://nubxasqsgjdunghlifcfzn.streamlit.app/`
+- **DagsHub** — MLflow tracking distant
+- **GitHub Actions** — collecte quotidienne automatisée (Kraken par défaut, Binance bloqué sur serveurs US) avec alertes email de démarrage et de fin chaque matin
+
+> Note : Prometheus et Grafana ne sont pas utilisés dans ce déploiement cloud free tier — ils font partie de la stack VPS versionnée dans `_v1/infra/`.
+
+### 7.5 CI/CD
 
 GitHub Actions déclenche les tests sur chaque Pull Request. Nous avons protégé les branches `main` et `dev` contre les pushs directs dès février 2026.
 
@@ -492,7 +511,7 @@ make test-cov   # pytest --cov=src --cov=api --cov-report=term-missing
 | MVP fonctionnel | ✅ | 6 pages Streamlit + API REST + ML |
 | Roadmap technique | ✅ | 10 sprints documentés |
 | Tests | ✅ | pytest, CI GitHub Actions |
-| Déploiement & monitoring | ✅ | Ansible, Docker, Nginx, Prometheus, Grafana |
+| Déploiement & monitoring | ✅ | Ansible, Docker, Nginx, Prometheus, Grafana (VPS) + Render/Streamlit Cloud (cloud POC) |
 | Rapport final | ✅ | Ce document |
 
 ### 9.2 Fonctionnalités du sujet
@@ -507,14 +526,13 @@ make test-cov   # pytest --cov=src --cov=api --cov-report=term-missing
 | ML non supervisé | ⚠️ Partiel | Pas de clustering explicite en production |
 | ML par renforcement | ❌ Non livré | Paper trading privilégié comme étape intermédiaire |
 | Paper trading | ✅ Livré et élargi | WebSocket live, métriques financières complètes |
-| Monitoring infra | ✅ Livré | Prometheus + Grafana |
+| Monitoring infra | ✅ Livré | Prometheus + Grafana (stack VPS — non activé en cloud free tier) |
 | PostgreSQL | ✅ Livré | + migration SQLite→PostgreSQL |
 | MongoDB | ❌ Abandonné | PostgreSQL suffisant |
 | TensorFlow/PyTorch | ❌ Non utilisés | scikit-learn + XGBoost suffisants |
 | MLflow | ✅ Livré | Conforme |
 | Docker | ✅ Livré | API + Frontend + MLflow |
 | GitHub Actions CI/CD | ✅ Livré | Dès le départ |
-| Chatbot LLM (optionnel) | ❌ Non livré | 
 
 ---
 
@@ -524,19 +542,17 @@ make test-cov   # pytest --cov=src --cov=api --cov-report=term-missing
 
 **Complétude de la chaîne de valeur** : nous livrons une plateforme end-to-end fonctionnelle, de la collecte brute jusqu'au trading simulé. Aucun maillon n'est laissé en suspens.
 
-**Rigueur dès le départ** : CI/CD, branches protégées, tests unitaires et architecture modulaire ont été mis en place dès le premier commit. Cette rigueur a évité la dette technique qui fragilise souvent les projets académiques.
+**Rigueur dès le départ** : CI/CD, branches protégées, tests unitaires et architecture modulaire ont été mis en place dès le premier commit. Cette rigueur a évité la dette technique.
 
-**Adaptation pragmatique** : plusieurs pivots (MongoDB → PostgreSQL, BeautifulSoup → RSS, PyTorch → XGBoost) ont été réalisés sans dérapage de calendrier, grâce à une architecture découplée et une culture du test.
+**Au-delà du scope du cadrage** : WebSocket Binance pour les prix temps réel, paper trading complet avec P&L live, infrastructure Ansible/Prometheus/Grafana (VPS), `setup.sh` multi-OS, Dev Container, déploiement cloud POC (Render + Supabase + Streamlit Cloud) et catalogue UML V2 (22 diagrammes) dépassent les ambitions initiales.
 
-**Au-delà du scope du cadrage** : WebSocket Binance pour les prix temps réel, paper trading complet avec P&L live, infrastructure Ansible/Prometheus/Grafana et `setup.sh` multi-OS dépassent les ambitions initiales.
-
-**~70 Pull Requests en 5 mois** : collaboration structurée avec répartition claire des responsabilités.
+**~88 Pull Requests en 7 mois** : collaboration structurée avec répartition claire des responsabilités.
 
 ### 10.2 Difficultés rencontrées
 
 **MLflow en Docker** : le middleware de sécurité de MLflow 2.x rejette par défaut les requêtes ne venant pas de `localhost`. L'ajout de `--allowed-hosts "*"` a résolu le problème.
 
-**Installation multi-OS (`setup.sh`)** : la plateforme devait fonctionner sur les machines des deux membres de l'équipe (macOS), les environnements CI Linux et le VPS Debian de production. Un simple `pip install -r requirements.txt` ne suffisait pas : `psycopg2` requiert `libpq-dev` sur Debian, `postgresql-devel` sur RedHat, ou `libpq` via Homebrew sur macOS ; plusieurs packages ML nécessitent en outre des headers de compilation (`python3-dev`, `build-essential`). Nous avons écrit `setup.sh`, un script bash qui détecte l'OS via `uname -s` puis affine la distribution Linux via les marqueurs `/etc/debian_version`, `/etc/redhat-release`, `/etc/arch-release` et `/etc/alpine-release`, avant d'appeler le bon gestionnaire de paquets (`apt`, `yum`, `pacman`, `apk`, `brew`). Le script vérifie également la version Python (3.10+ requis), crée et active le venv (sauf si conda est déjà actif), copie `.env.example` en `.env` et initialise les dossiers nécessaires. Windows est explicitement détecté et orienté vers WSL2 ou `make docker`. Ce script a uniformisé l'onboarding et supprimé les divergences d'environnement entre les membres de l'équipe et le CI.
+**Installation multi-OS (`setup.sh`)** : la plateforme devait fonctionner sur les machines des deux membres de l'équipe (macOS et windows), les environnements CI Linux et le VPS Debian de production. Un simple `pip install -r requirements.txt` ne suffisait pas : `psycopg2` requiert `libpq-dev` sur Debian, `postgresql-devel` sur RedHat, ou `libpq` via Homebrew sur macOS ; plusieurs packages ML nécessitent en outre des headers de compilation (`python3-dev`, `build-essential`). Nous avons écrit `setup.sh`, un script bash qui détecte l'OS via `uname -s` puis affine la distribution Linux via les marqueurs `/etc/debian_version`, `/etc/redhat-release`, `/etc/arch-release` et `/etc/alpine-release`, avant d'appeler le bon gestionnaire de paquets (`apt`, `yum`, `pacman`, `apk`, `brew`). Le script vérifie également la version Python (3.10+ requis), crée et active le venv (sauf si conda est déjà actif), copie `.env.example` en `.env` et initialise les dossiers nécessaires. Windows est explicitement détecté et orienté vers WSL2 ou `make docker`. Ce script a uniformisé l'onboarding et supprimé les divergences d'environnement entre les membres de l'équipe et le CI.
 
 **Compatibilité Linux** : `make run` présentait un bug sur Linux (absence de timeout sur la boucle d'attente de l'API, erreurs uvicorn masquées). Résolu par un compteur de timeout et `--log-level info`.
 
@@ -546,15 +562,15 @@ make test-cov   # pytest --cov=src --cov=api --cov-report=term-missing
 
 ### 10.3 Axes d'amélioration
 
-**Apprentissage par renforcement** : objectif initial non atteint. Le paper trading peut servir d'environnement de simulation pour un agent RL (Monte Carlo, Q-learning comme prévu dans la roadmap).
+**Apprentissage par renforcement** : le paper trading peut servir d'environnement de simulation pour un agent RL (Monte Carlo, Q-learning comme prévu dans la roadmap).
 
-**Authentification** : la plateforme ne gère pas encore les utilisateurs. Un flow JWT a été étudié.
-
-**Données on-chain** : les personas (Noah notamment) expriment un besoin de données on-chain (flux DEX, activité whale) que nous n'avons pas couvert. Glassnode, Dune Analytics et Nansen sont identifiés comme sources.
+**Authentification** : la plateforme ne gère pas encore les utilisateurs.
 
 **Sources news premium** : PhoenixNews (~1500 sources temps réel) et Cryptorank ont été identifiés en discovery mais non intégrés (coût).
 
-**Mise en production complète** : `monpetitbet.fr` est prêt, le SSL reste à activer (configuration Nginx HTTPS commentée).
+**Mise en production complète** : l'API est déployée sur Render avec Supabase ; ce déploiement cloud gratuit constitue une vitrine fonctionnelle.
+
+**Frontend cloud** : le déploiement Streamlit sur Render est en cours de finalisation (configuration en place dans `render.yaml`).
 
 ---
 
@@ -571,23 +587,27 @@ make test-cov   # pytest --cov=src --cov=api --cov-report=term-missing
 | Mai 2026 | Docker, NLP, signaux, XGBoost, alerting |
 | Mai 2026 | Paper trading, PostgreSQL, WebSocket |
 | Mai 2026 | Fixes, setup, docs, infra prod |
-| **Total** | | **~100 commits, 65 PRs** |
+| Mai–Jun 2026 | Déploiement cloud Render/Supabase/DagsHub, Dev Container, catalogue UML V2 (22 diagrammes), Kraken par défaut, collecte quotidienne GitHub Actions |
+| **Total** | **~100+ commits, 88 PRs** |
 
 ### B. Livrables
 
 | Livrable | Localisation |
 |---|---|
 | Code source | `Marivel75/_Crypto_Bot` (GitHub) |
-| API documentée | `http://localhost:8000/docs` |
-| Front | `http://localhost:8501` |
+| API documentée (local) | `http://localhost:8000/docs` |
+| API (cloud) | Render — voir `render.yaml` |
+| Front (local) | `http://localhost:8501` |
 | Documentation technique | `docs/` |
 | Schéma BDD | `docs/database_schema.md` |
-| Diagrammes UML | `_v1/_all-diagrams.md` |
+| Diagrammes UML V2 (22) | `docs/diagrams/` |
 | Infrastructure prod | `_v1/infra/` |
 | Script d'installation | `setup.sh` |
+| Dev Container | `.devcontainer/devcontainer.json` |
 | Tests | `tests/` |
 | Cadrage | `Crypto_bot_cadrage_V2.pdf` |
 | Ressources discovery | `ressources_projet/` |
+| Rapport final | `ressources_projet/rapport_final.md` |
 
 ### C. Dépendances principales
 
