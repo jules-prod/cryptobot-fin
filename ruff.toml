@@ -1,0 +1,8 @@
+line-length = 130
+
+[lint]
+select = ["E", "F", "W"]
+ignore = [
+    "E402",  # Streamlit pages need st.set_page_config() before imports
+    "E501",  # Existing codebase has long French docstrings; enforce via formatter instead
+]

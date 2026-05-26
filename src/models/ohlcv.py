@@ -10,7 +10,6 @@ Volume : Volume échangé
 from sqlalchemy import Column, String, Float, DateTime, Index
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
-import pandas as pd
 
 Base = declarative_base()
 

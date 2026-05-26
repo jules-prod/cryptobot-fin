@@ -1,4 +1,3 @@
-import pandas as pd
 from datetime import datetime
 from logger_settings import logger
 from src.models.global_snapshot import GlobalMarketSnapshot

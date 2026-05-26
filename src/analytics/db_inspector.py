@@ -430,7 +430,7 @@ class DBInspector:
 
                 logger.info(f"   Dernière mise à jour: {last_update}")
             else:
-                logger.info(f"   Dernière mise à jour: Non disponible")
+                logger.info("   Dernière mise à jour: Non disponible")
 
             logger.info("")
 

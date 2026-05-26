@@ -7,7 +7,7 @@ import mplfinance as mpf
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
-from typing import Optional, Dict, Any, List, Union
+from typing import Optional, Any, List
 from logger_settings import logger
 from src.analytics.technical_calculator import TechnicalCalculator
 

@@ -3,10 +3,8 @@ Module de validation des données OHLCV.
 """
 
 import pandas as pd
-import numpy as np
 from typing import List, Dict, Optional, Tuple
-from logger_settings import logger
-from datetime import datetime, timedelta
+from datetime import datetime
 
 
 class DataValidator0HCLV:

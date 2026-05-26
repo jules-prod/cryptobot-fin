@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install ruff
-      - run: ruff check src/ api/ frontend/ collector/ --select E,F,W
+      - run: ruff check src/ api/ frontend/ collector/
 
   test:
     name: Tests

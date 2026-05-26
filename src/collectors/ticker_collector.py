@@ -13,6 +13,7 @@ from logger_settings import logger
 from config.settings import config
 from src.services.db_context import database_transaction
 from src.models.ticker import TickerSnapshot
+from src.services.db import get_db_engine
 from src.services.exchange_factory import ExchangeFactory
 from sqlalchemy import text
 
@@ -269,9 +270,9 @@ class TickerCollector:
                     db_conn.execute(
                         text(
                             """
-                            INSERT INTO ticker_snapshots (id, snapshot_time, symbol, exchange, price, volume_24h, 
+                            INSERT INTO ticker_snapshots (id, snapshot_time, symbol, exchange, price, volume_24h,
                             price_change_24h, price_change_pct_24h, high_24h, low_24h)
-                            VALUES (:id, :snapshot_time, :symbol, :exchange, :price, :volume_24h, 
+                            VALUES (:id, :snapshot_time, :symbol, :exchange, :price, :volume_24h,
                             :price_change_24h, :price_change_pct_24h, :high_24h, :low_24h)
                             """
                         ),

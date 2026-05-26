@@ -5,7 +5,6 @@ Module de planification dédié aux tâches OHLCV (données historiques).
 import schedule
 import time
 import threading
-from typing import List, Optional
 from logger_settings import logger
 from config.settings import config
 from src.collectors.ohlcv_collector import OHLCVCollector

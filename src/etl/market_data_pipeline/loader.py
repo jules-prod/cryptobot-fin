@@ -1,15 +1,6 @@
 from logger_settings import logger
-from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
-from src.models.global_snapshot import GlobalMarketSnapshot
-from src.models.global_market_cap import GlobalMarketCap
-from src.models.global_market_volume import GlobalMarketVolume
-from src.models.global_market_dominance import GlobalMarketDominance
-from src.models.top_crypto_snapshot import TopCryptoSnapshot
-from src.models.top_crypto import TopCrypto
-from src.models.crypto_detail_snapshot import CryptoDetailSnapshot
-from src.models.crypto_detail import CryptoDetail
 
 
 class LoadingErrorMarketData(Exception):

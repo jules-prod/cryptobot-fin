@@ -5,7 +5,6 @@ from src.etl.market_data_pipeline.transformer import MarketDataTransformer
 from src.etl.market_data_pipeline.loader import MarketDataLoader
 from src.services.db import get_db_engine
 from logger_settings import logger
-import time
 
 
 class MarketDataCollector:

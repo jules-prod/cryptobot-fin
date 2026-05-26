@@ -2,7 +2,7 @@
 Gère l'extraction des données OHLCV depuis les exchanges.
 """
 
-from typing import List, Optional
+from typing import List
 from logger_settings import logger
 
 

@@ -120,10 +120,10 @@ def _render_fear_greed(data: dict[str, Any]) -> None:
             unsafe_allow_html=True,
         )
         st.markdown(
-            f'<div style="font-size:0.78em;color:#8b949e;margin-top:12px">'
-            f'0–24 Peur Extrême · 25–44 Peur<br>'
-            f'45–55 Neutre · 56–74 Avidité<br>'
-            f'75–100 Avidité Extrême</div>',
+            '<div style="font-size:0.78em;color:#8b949e;margin-top:12px">'
+            '0–24 Peur Extrême · 25–44 Peur<br>'
+            '45–55 Neutre · 56–74 Avidité<br>'
+            '75–100 Avidité Extrême</div>',
             unsafe_allow_html=True,
         )
         with st.expander("C'est quoi ?", expanded=False):

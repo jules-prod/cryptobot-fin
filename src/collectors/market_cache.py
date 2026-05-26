@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import List, Dict
+from typing import List
 from logger_settings import logger
 
 

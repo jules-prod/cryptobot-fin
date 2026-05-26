@@ -6,11 +6,6 @@ Ce module fournit une interface pour interagir avec l'API Coinbase Advanced Trad
 
 import ccxt
 from logger_settings import logger
-from src.config.settings import (
-    COINBASE_API_KEY,
-    COINBASE_API_SECRET,
-    COINBASE_API_PASSPHRASE,
-)
 
 
 class CoinbaseClient:

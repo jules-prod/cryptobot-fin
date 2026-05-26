@@ -1,4 +1,3 @@
-import pandas as pd
 from logger_settings import logger
 from src.services.exchange_factory import ExchangeFactory
 from src.services.db_context import database_transaction
@@ -87,7 +86,7 @@ class OHLCVCollector:
 
             # Utiliser des context managers pour les ressources
             with ExchangeClient(self.exchange) as client:
-                with database_transaction() as db_conn:
+                with database_transaction():
                     # Mettre à jour le client dans le pipeline
                     self.pipeline.extractor.client = client
 
@@ -103,7 +102,7 @@ class OHLCVCollector:
         summary = self.pipeline.get_summary(all_batch_results)
 
         # Log du résumé global
-        logger.info(f"📊 Résumé du pipeline ETL:")
+        logger.info("📊 Résumé du pipeline ETL:")
         logger.info(f"  Symboles traités: {summary['total_symbols']}")
         logger.info(f"  Succès: {summary['successful']}")
         logger.info(f"  Échecs: {summary['failed']}")
@@ -117,7 +116,7 @@ class OHLCVCollector:
         # Log des échecs individuels si nécessaire
         failed_symbols = [s for s, r in all_batch_results.items() if not r.success]
         if failed_symbols:
-            logger.warning(f"⚠️  Échecs individuels:")
+            logger.warning("⚠️  Échecs individuels:")
             for symbol in failed_symbols:
                 result = all_batch_results[symbol]
                 logger.warning(f"  - {symbol}: {result.error_step} - {result.error}")
