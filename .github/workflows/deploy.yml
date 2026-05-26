@@ -1,0 +1,66 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    name: CI Gate
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: ci
+    environment: production
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd /home/ubuntu/cryptobot
+
+            echo "--- Git pull ---"
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "--- Deploy ---"
+            bash scripts/deploy.sh
+
+      - name: Smoke test
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            echo "--- Smoke test ---"
+            # Wait for services to be healthy (max 90s)
+            for i in $(seq 1 18); do
+              if curl -sf --max-time 5 http://localhost:8000/health | grep -q '"status":"ok"'; then
+                echo "API healthy"
+                break
+              fi
+              echo "Waiting for API... ($i/18)"
+              sleep 5
+            done
+
+            # Final checks
+            curl -sf --max-time 5 http://localhost:8000/health || { echo "FAIL: API unhealthy"; exit 1; }
+            curl -sf --max-time 5 http://localhost:8501/_stcore/health || { echo "FAIL: Frontend unhealthy"; exit 1; }
+            curl -sf --max-time 5 http://localhost:5001/health || echo "WARN: MLflow not responding (non-blocking)"
+
+            echo "--- All critical services healthy ---"

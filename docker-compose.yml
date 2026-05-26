@@ -4,6 +4,12 @@ services:
       context: .
       dockerfile: mlflow/Dockerfile
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 5
     ports:
       - "5001:5000"
     volumes:
@@ -50,6 +56,12 @@ services:
         condition: service_healthy
     networks:
       - crypto-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
 
   collector:
     build:
