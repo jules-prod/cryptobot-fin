@@ -1,3 +1,6 @@
+# ao orchestrator
+.ao/
+
 # Secrets et environnement
 .env
 .venv/
