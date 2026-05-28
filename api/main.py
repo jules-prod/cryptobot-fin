@@ -47,6 +47,9 @@ async def lifespan(app: FastAPI):
     pairs = config.get("pairs", [])
     if pairs:
         start_ws_collector(pairs)
+    # Démarrage du scheduler news RSS (thread daemon, 60 min interval)
+    from src.services.news_scheduler import start_news_scheduler
+    start_news_scheduler(interval_minutes=60)
     yield
     # Arrêt : le thread est daemon, il se termine avec le process
 
