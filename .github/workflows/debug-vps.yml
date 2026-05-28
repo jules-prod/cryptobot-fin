@@ -35,7 +35,7 @@ jobs:
           echo "=== OHLCV max(timestamp) per (symbol, timeframe) ==="
           docker compose exec -T api python - <<'PY'
           import sqlite3, os
-          db = '/app/data/crypto_data.db'
+          db = '/app/data/processed/crypto_data.db'
           if not os.path.exists(db):
               print(f"DB MISSING: {db}")
               raise SystemExit
