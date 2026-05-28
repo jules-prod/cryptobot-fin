@@ -118,6 +118,8 @@
             echo "$f"
           fi
         done
+      args:
+        executable: /bin/bash
       register: old_vhosts
       changed_when: false
       failed_when: false
