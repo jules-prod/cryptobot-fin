@@ -68,6 +68,15 @@ jobs:
               print(f'  {ex}')
           PY
           echo
+          echo "=== curl signals API from inside docker ==="
+          docker compose exec -T api curl -s 'http://localhost:8000/signals?symbol=ADA/USDT&timeframe=1d&limit=3&exchange=binance' | python3 -m json.tool | head -40 || true
+          echo
+          echo "=== frontend container test ==="
+          docker compose exec -T frontend curl -s 'http://api:8000/signals?symbol=ADA/USDT&timeframe=1d&limit=3&exchange=binance' | python3 -m json.tool | head -40 || true
+          echo
+          echo "=== docker images SHA + restart times ==="
+          docker compose ps --format 'table {{.Name}}\t{{.Image}}\t{{.RunningFor}}\t{{.Status}}'
+          echo
           echo "=== Collector logs (last 150 lines) ==="
           docker compose logs --tail=150 collector || true
           echo
