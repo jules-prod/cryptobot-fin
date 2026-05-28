@@ -54,11 +54,15 @@ jobs:
 
       - name: Render inventory with VPS_HOST
         env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_HOST_RAW: ${{ secrets.VPS_HOST }}
         working-directory: infra/ansible
         run: |
+          # Trim whitespace/newlines to avoid INI parser breaking on multi-line
+          VPS_HOST=$(printf '%s' "$VPS_HOST_RAW" | tr -d '\n\r\t ')
+          export VPS_HOST
           envsubst < inventories/production.ini > inventories/production.rendered.ini
-          grep -v 'ansible_host' inventories/production.rendered.ini | head -5
+          # Sanity check : show structure without IP
+          awk '/ansible_host=/{ sub(/ansible_host=[^ ]+/, "ansible_host=<REDACTED>") } 1' inventories/production.rendered.ini
 
       - name: Run deploy playbook
         env:
