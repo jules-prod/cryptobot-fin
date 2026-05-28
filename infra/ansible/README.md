@@ -12,9 +12,9 @@ infra/ansible/
 │   ├── production.ini         # ${VPS_HOST} env-driven
 │   └── production.ini.example # template
 ├── playbooks/
-│   ├── provision.yml          # ONE-TIME — apt, docker, nginx, fail2ban, ufw
-│   ├── ssl.yml                # ONE-TIME — Let's Encrypt cert via --webroot
-│   ├── deploy.yml             # RECURRING — rsync repo + run scripts/deploy.sh
+│   ├── provision.yml          # ONE-TIME (fresh VPS) — apt, docker, nginx, fail2ban, ufw
+│   ├── ssl.yml                # ONE-TIME (fresh VPS) — Let's Encrypt cert via --webroot
+│   ├── deploy.yml             # RECURRING — 2 plays: app sync + nginx vhost setup
 │   └── backup.yml             # STUB iter 1 — tar data/ dir
 └── templates/
     ├── jail.local.j2          # fail2ban
@@ -24,76 +24,108 @@ infra/ansible/
     └── sshd_config.j2         # SSH hardening
 ```
 
-## Prerequisites
+## One-Time Setup (VPS déjà provisionné, cas courant)
 
-1. **DNS** — A records configured BEFORE running `ssl.yml`:
-   ```
-   dts-cryptobot.fr.       A    <VPS_PUBLIC_IP>
-   www.dts-cryptobot.fr.   A    <VPS_PUBLIC_IP>
-   ```
-   Verify: `dig +short dts-cryptobot.fr`
+Le VPS OVH est déjà provisionné (docker, nginx, fail2ban, ufw, cert Let's Encrypt en place).
+**Tu ne lances PAS `provision.yml` ni `ssl.yml`.** Tu fais juste le cleanup de l'ancien code + tu pushes le `.env`.
 
-2. **GitHub secrets** — set in repo Settings → Environments → `production`:
-   | Secret | Value |
-   |---|---|
-   | `VPS_HOST` | OVH public IP |
-   | `VPS_SSH_KEY` | SSH private key (ed25519) for user `ubuntu` |
-
-3. **Local Ansible** — for the one-time bootstrap, you need ansible installed locally:
-   ```bash
-   pip install "ansible-core>=2.16,<2.18"
-   ansible-galaxy collection install community.docker community.general ansible.posix
-   ```
-
-## One-Time Bootstrap (owner: Jules)
-
-Run from your laptop, NOT from GitHub Actions:
+### 1. Cleanup ancien code sur le VPS
 
 ```bash
-export VPS_HOST=<OVH_IP>
-cd infra/ansible
+ssh ubuntu@<VPS_IP>
 
-# 1. Base provision (apt, docker, nginx + config, fail2ban, ufw, swap)
-ansible-playbook -i inventories/production.ini playbooks/provision.yml --ask-become-pass
+# Identifier l'ancien dossier
+ls -la ~/
+docker ps -a
 
-# 2. SSL cert (after DNS A records propagated)
-ansible-playbook -i inventories/production.ini playbooks/ssl.yml
+# Stopper l'ancien (backup déjà sur la branche agent/backup-prod-2026-05-27)
+cd ~/<ancien-dossier>
+docker compose down -v --remove-orphans
+cd ~
 
-# 3. Push the application .env to the VPS (NOT versioned)
-scp .env.prod ubuntu@$VPS_HOST:/home/ubuntu/cryptobot/.env
+# Supprimer l'ancien dossier
+\rm -rf ~/<ancien-dossier>
+
+# Créer le nouveau dossier vide (sera populé par rsync au premier deploy)
+mkdir -p ~/cryptobot
+```
+
+### 2. Pousser le .env de prod
+
+```bash
+scp .env.prod ubuntu@<VPS_IP>:/home/ubuntu/cryptobot/.env
+```
+
+### 3. Configurer les GitHub secrets
+
+Repo Settings → Environments → `production` :
+
+| Secret | Valeur |
+|---|---|
+| `VPS_HOST` | IP publique OVH |
+| `VPS_SSH_KEY` | clé privée ed25519 du user `ubuntu` |
+
+### 4. (Optionnel) Vérifier le cert SSL existant
+
+```bash
+ssh ubuntu@<VPS_IP> 'sudo certbot certificates'
+```
+
+Le cert pour `dts-cryptobot.fr` doit être listé. Si auto-renew pas configuré :
+
+```bash
+ssh ubuntu@<VPS_IP> 'sudo crontab -l | grep certbot'
+```
+
+Si vide, ajouter (one-shot) :
+
+```bash
+ssh ubuntu@<VPS_IP> "echo '0 2 * * * certbot renew --quiet --post-hook \"systemctl reload nginx\"' | sudo crontab -"
 ```
 
 ## Recurring Deploys
 
-Triggered automatically on push to `main` by `.github/workflows/deploy.yml`:
+Triggered automatically on push to `main` by `.github/workflows/deploy.yml` :
 
 1. CI gate (lint + tests + docker build) — `ci.yml` reused
-2. SSH setup on runner (uses `VPS_SSH_KEY` secret)
+2. Runner installs `ansible-core` + collections + configures SSH (uses `VPS_SSH_KEY` secret)
 3. `ansible-lint` (non-blocking warnings)
-4. `ansible-playbook playbooks/deploy.yml` from runner →
-   - rsync repo → `/home/ubuntu/cryptobot/`
-   - verify `.env` exists
-   - run `scripts/deploy.sh` (compose build + up -d + healthcheck poll)
-5. External smoke test: `curl https://dts-cryptobot.fr/health` from runner
+4. `ansible-playbook playbooks/deploy.yml` runs **2 plays**:
+   - **Play 1** (no escalation) : rsync repo → `/home/ubuntu/cryptobot/`, vérifie `.env`, exécute `scripts/deploy.sh` (compose build + up -d + healthcheck poll)
+   - **Play 2** (`become: true`) : idempotent — template du vhost nginx `/etc/nginx/sites-available/cryptobot.conf` + symlink sites-enabled, suppression auto des anciens vhosts pour `dts-cryptobot.fr`, `nginx -t` strict, reload
+5. External smoke test : `curl https://dts-cryptobot.fr/health` depuis le runner
 
-Manual trigger: `gh workflow run "Deploy to VPS"`.
+Manual trigger : `gh workflow run "Deploy to VPS"`.
 
 ## Rollback
 
-SSH to VPS and pin to previous git ref:
+SSH au VPS et pin à un commit précédent :
+
 ```bash
-ssh ubuntu@$VPS_HOST
+ssh ubuntu@<VPS_IP>
 cd /home/ubuntu/cryptobot
 git log --oneline -10
 git reset --hard <previous-sha>
 bash scripts/deploy.sh
 ```
 
+## Fresh VPS Bootstrap (rare, premier provisioning)
+
+Pour un VPS vierge, dans cet ordre :
+
+```bash
+export VPS_HOST=<IP>
+cd infra/ansible
+ansible-playbook -i inventories/production.ini playbooks/provision.yml --ask-become-pass
+ansible-playbook -i inventories/production.ini playbooks/ssl.yml
+scp .env.prod ubuntu@$VPS_HOST:/home/ubuntu/cryptobot/.env
+```
+
 ## Out of Scope (iter 1)
 
 - TimescaleDB / MinIO / Prometheus / Grafana services (not in current docker-compose.yml)
-- Real DB backup (backup.yml is a stub — tars data/ dir only)
-- Ansible Vault for .env (manual scp for now)
+- Real DB backup (`backup.yml` is a stub — tars `data/` dir only)
+- Ansible Vault for `.env` (manual scp for now)
 - Staging environment
 
 See `.omc/plans/cb-master-roadmap.md` Phase 4 for deferred items.

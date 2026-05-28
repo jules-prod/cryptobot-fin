@@ -1,8 +1,13 @@
 ---
 # Deploy crypto-bot to VPS
 # Usage: ansible-playbook -i inventories/production.ini playbooks/deploy.yml
+#
+# Two plays:
+#   1. Sync repo + run docker compose deploy (no privilege escalation)
+#   2. Idempotent nginx vhost setup (become: true)
+# Run on every push to main via .github/workflows/deploy.yml.
 
-- name: Deploy Crypto Bot
+- name: Deploy Crypto Bot — App
   hosts: vps
   become: false
   vars_files:
@@ -51,3 +56,88 @@
     - name: Show deploy output
       debug:
         var: deploy_output.stdout_lines
+
+
+- name: Deploy Crypto Bot — Nginx reverse proxy
+  hosts: vps
+  become: true
+  vars_files:
+    - ../group_vars/vps.yml
+
+  tasks:
+    - name: Ensure nginx snippets dir exists
+      file:
+        path: /etc/nginx/snippets
+        state: directory
+        mode: "0755"
+
+    - name: Ensure certbot webroot exists
+      file:
+        path: /var/www/certbot
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: "0755"
+
+    - name: Template nginx proxy-params snippet
+      template:
+        src: ../templates/nginx-proxy-params.conf.j2
+        dest: /etc/nginx/snippets/proxy-params.conf
+        mode: "0644"
+      notify: Reload nginx
+
+    - name: Template cryptobot vhost
+      template:
+        src: ../templates/nginx-vhost.conf.j2
+        dest: /etc/nginx/sites-available/cryptobot.conf
+        mode: "0644"
+      notify: Reload nginx
+
+    - name: Enable cryptobot vhost (symlink to sites-enabled)
+      file:
+        src: /etc/nginx/sites-available/cryptobot.conf
+        dest: /etc/nginx/sites-enabled/cryptobot.conf
+        state: link
+        force: true
+      notify: Reload nginx
+
+    - name: Disable default nginx vhost
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: Reload nginx
+
+    - name: Find old vhosts referencing dts-cryptobot.fr
+      shell: |
+        set -euo pipefail
+        cd /etc/nginx/sites-enabled 2>/dev/null || exit 0
+        for f in *; do
+          [ "$f" = "cryptobot.conf" ] && continue
+          [ -f "$f" ] || [ -L "$f" ] || continue
+          if grep -q "dts-cryptobot.fr" "$f" 2>/dev/null; then
+            echo "$f"
+          fi
+        done
+      register: old_vhosts
+      changed_when: false
+      failed_when: false
+
+    - name: Remove old dts-cryptobot.fr vhosts (keep only cryptobot.conf)
+      file:
+        path: "/etc/nginx/sites-enabled/{{ item }}"
+        state: absent
+      loop: "{{ old_vhosts.stdout_lines }}"
+      when: old_vhosts.stdout_lines | length > 0
+      notify: Reload nginx
+
+    - name: Validate nginx config
+      command: nginx -t
+      register: nginx_test
+      changed_when: false
+      failed_when: nginx_test.rc != 0
+
+  handlers:
+    - name: Reload nginx
+      systemd:
+        name: nginx
+        state: reloaded
