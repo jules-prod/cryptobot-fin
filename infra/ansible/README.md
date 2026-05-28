@@ -1,4 +1,4 @@
-# Ansible — Prod Deploy (dts-cryptobot.fr)
+# Ansible — Prod Deploy (dtsc-cryptobot.fr)
 
 Configures the OVH VPS and deploys cryptobot-fin via GitHub Actions.
 
@@ -71,7 +71,7 @@ Repo Settings → Environments → `production` :
 ssh ubuntu@<VPS_IP> 'sudo certbot certificates'
 ```
 
-Le cert pour `dts-cryptobot.fr` doit être listé. Si auto-renew pas configuré :
+Le cert pour `dtsc-cryptobot.fr` doit être listé. Si auto-renew pas configuré :
 
 ```bash
 ssh ubuntu@<VPS_IP> 'sudo crontab -l | grep certbot'
@@ -92,8 +92,8 @@ Triggered automatically on push to `main` by `.github/workflows/deploy.yml` :
 3. `ansible-lint` (non-blocking warnings)
 4. `ansible-playbook playbooks/deploy.yml` runs **2 plays**:
    - **Play 1** (no escalation) : rsync repo → `/home/ubuntu/cryptobot/`, vérifie `.env`, exécute `scripts/deploy.sh` (compose build + up -d + healthcheck poll)
-   - **Play 2** (`become: true`) : idempotent — template du vhost nginx `/etc/nginx/sites-available/cryptobot.conf` + symlink sites-enabled, suppression auto des anciens vhosts pour `dts-cryptobot.fr`, `nginx -t` strict, reload
-5. External smoke test : `curl https://dts-cryptobot.fr/health` depuis le runner
+   - **Play 2** (`become: true`) : idempotent — template du vhost nginx `/etc/nginx/sites-available/cryptobot.conf` + symlink sites-enabled, suppression auto des anciens vhosts pour `dtsc-cryptobot.fr`, `nginx -t` strict, reload
+5. External smoke test : `curl https://dtsc-cryptobot.fr/health` depuis le runner
 
 Manual trigger : `gh workflow run "Deploy to VPS"`.
 

@@ -107,14 +107,14 @@
         state: absent
       notify: Reload nginx
 
-    - name: Find old vhosts referencing dts-cryptobot.fr
+    - name: Find old vhosts referencing dtsc-cryptobot.fr
       shell: |
         set -euo pipefail
         cd /etc/nginx/sites-enabled 2>/dev/null || exit 0
         for f in *; do
           [ "$f" = "cryptobot.conf" ] && continue
           [ -f "$f" ] || [ -L "$f" ] || continue
-          if grep -q "dts-cryptobot.fr" "$f" 2>/dev/null; then
+          if grep -q "dtsc-cryptobot.fr" "$f" 2>/dev/null; then
             echo "$f"
           fi
         done
@@ -122,7 +122,7 @@
       changed_when: false
       failed_when: false
 
-    - name: Remove old dts-cryptobot.fr vhosts (keep only cryptobot.conf)
+    - name: Remove old dtsc-cryptobot.fr vhosts (keep only cryptobot.conf)
       file:
         path: "/etc/nginx/sites-enabled/{{ item }}"
         state: absent

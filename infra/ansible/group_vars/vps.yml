@@ -9,10 +9,10 @@ deploy_user: ubuntu
 docker_compose_dir: /home/ubuntu/cryptobot
 
 # Domain / SSL
-domain_name: "dts-cryptobot.fr"
+domain_name: "dtsc-cryptobot.fr"
 domain_aliases:
-  - "www.dts-cryptobot.fr"
-letsencrypt_email: "admin@dts-cryptobot.fr"
+  - "www.dtsc-cryptobot.fr"
+letsencrypt_email: "admin@dtsc-cryptobot.fr"
 
 # Nginx (handled by host nginx, not Docker nginx)
 nginx_worker_processes: auto
