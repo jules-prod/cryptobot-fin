@@ -52,13 +52,20 @@ jobs:
         run: ansible-lint infra/ansible/playbooks/ || echo "ansible-lint warnings (non-blocking)"
         continue-on-error: true
 
-      - name: Run deploy playbook
+      - name: Render inventory with VPS_HOST
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
+        working-directory: infra/ansible
+        run: |
+          envsubst < inventories/production.ini > inventories/production.rendered.ini
+          grep -v 'ansible_host' inventories/production.rendered.ini | head -5
+
+      - name: Run deploy playbook
+        env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
         working-directory: infra/ansible
         run: |
-          ansible-playbook -i inventories/production.ini playbooks/deploy.yml -v
+          ansible-playbook -i inventories/production.rendered.ini playbooks/deploy.yml -v
 
       - name: External smoke test
         run: |
