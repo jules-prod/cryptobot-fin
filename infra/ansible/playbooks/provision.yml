@@ -169,6 +169,57 @@
           - python3-certbot-nginx
         state: present
 
+    # --- Nginx Config Deployment ---
+    - name: Create webroot for ACME challenge
+      file:
+        path: /var/www/certbot
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: "0755"
+
+    - name: Ensure nginx snippets directory
+      file:
+        path: /etc/nginx/snippets
+        state: directory
+        mode: "0755"
+
+    - name: Deploy nginx proxy-params snippet
+      template:
+        src: ../templates/nginx-proxy-params.conf.j2
+        dest: /etc/nginx/snippets/proxy-params.conf
+        mode: "0644"
+      notify: Reload nginx
+
+    - name: Deploy nginx main config
+      template:
+        src: ../templates/nginx-host.conf.j2
+        dest: /etc/nginx/nginx.conf
+        backup: true
+        mode: "0644"
+      notify: Reload nginx
+
+    - name: Deploy nginx vhost config
+      template:
+        src: ../templates/nginx-vhost.conf.j2
+        dest: /etc/nginx/sites-available/cryptobot.conf
+        mode: "0644"
+      notify: Reload nginx
+
+    - name: Enable cryptobot vhost
+      file:
+        src: /etc/nginx/sites-available/cryptobot.conf
+        dest: /etc/nginx/sites-enabled/cryptobot.conf
+        state: link
+        force: true
+      notify: Reload nginx
+
+    - name: Remove default nginx vhost
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: Reload nginx
+
     # --- Application Directory ---
     - name: Create app directory
       file:
@@ -198,3 +249,12 @@
       systemd:
         name: fail2ban
         state: restarted
+
+    # NOTE: First provision will fail this reload because nginx-vhost.conf.j2
+    # references /etc/letsencrypt/live/{{ domain_name }}/*.pem which does not
+    # exist until ssl.yml runs. failed_when:false swallows that expected error.
+    - name: Reload nginx
+      systemd:
+        name: nginx
+        state: reloaded
+      failed_when: false

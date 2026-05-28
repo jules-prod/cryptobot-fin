@@ -9,12 +9,18 @@ deploy_user: ubuntu
 docker_compose_dir: /home/ubuntu/cryptobot
 
 # Domain / SSL
-domain_name: "monpetitbet.fr"
-letsencrypt_email: "admin@monpetitbet.fr"
+domain_name: "dts-cryptobot.fr"
+domain_aliases:
+  - "www.dts-cryptobot.fr"
+letsencrypt_email: "admin@dts-cryptobot.fr"
 
 # Nginx (handled by host nginx, not Docker nginx)
 nginx_worker_processes: auto
 nginx_worker_connections: 1024
+nginx_client_max_body_size: 50m
+
+# Cloudflare proxy IPs (empty = direct access, no CF in front)
+cloudflare_ip_ranges: []
 
 # Firewall (UFW)
 ufw_allowed_ports:
@@ -37,14 +43,9 @@ backup_schedule: "0 3 * * *"  # 3 AM daily
 healthcheck_url: "/health"
 healthcheck_interval: 60
 
-# Application
+# Application (aligned with current docker-compose.yml — 4 services)
 app_services:
-  - timescaledb
-  - minio
   - mlflow
   - api
   - frontend
-  - etl-worker
-  - ml-worker
-  - prometheus
-  - grafana
+  - collector
