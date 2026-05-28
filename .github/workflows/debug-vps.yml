@@ -1,0 +1,57 @@
+name: Debug VPS (data freshness)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Configure SSH
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          VPS_HOST=$(printf '%s' "$VPS_HOST" | tr -d '\n\r\t ')
+          echo "VPS_HOST_CLEAN=$VPS_HOST" >> $GITHUB_ENV
+          ssh-keyscan -T 30 -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: OHLCV freshness per (symbol, timeframe)
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN bash -s <<'REMOTE'
+          set -e
+          cd ~/cryptobot
+          echo "=== docker compose ps ==="
+          docker compose ps
+          echo
+          echo "=== OHLCV max(timestamp) per (symbol, timeframe) ==="
+          docker compose exec -T api python - <<'PY'
+          import sqlite3, os
+          db = '/app/data/crypto_data.db'
+          if not os.path.exists(db):
+              print(f"DB MISSING: {db}")
+              raise SystemExit
+          con = sqlite3.connect(db)
+          rows = con.execute("""
+              SELECT symbol, timeframe,
+                     MAX(timestamp) AS max_ts,
+                     MIN(timestamp) AS min_ts,
+                     COUNT(*) AS n
+              FROM ohlcv
+              GROUP BY symbol, timeframe
+              ORDER BY symbol, timeframe
+          """).fetchall()
+          for s, tf, mx, mn, n in rows:
+              print(f"{s:12s} {tf:4s}  n={n:6d}  min={mn}  max={mx}")
+          PY
+          echo
+          echo "=== Collector logs (last 150 lines) ==="
+          docker compose logs --tail=150 collector || true
+          echo
+          echo "=== API logs (last 60 lines) ==="
+          docker compose logs --tail=60 api || true
+          REMOTE
