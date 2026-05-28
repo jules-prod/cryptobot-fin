@@ -2,6 +2,10 @@ name: Debug VPS (data freshness)
 
 on:
   workflow_dispatch:
+  push:
+    branches: [prod]
+    paths:
+      - ".github/workflows/debug-vps.yml"
 
 jobs:
   diag:
