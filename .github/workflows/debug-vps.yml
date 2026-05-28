@@ -51,6 +51,21 @@ jobs:
           """).fetchall()
           for s, tf, mx, mn, n in rows:
               print(f"{s:12s} {tf:4s}  n={n:6d}  min={mn}  max={mx}")
+          # Repro de la query API signals ADA/USDT 1d binance
+          q = con.execute("""
+              SELECT timestamp, exchange FROM ohlcv
+              WHERE symbol='ADA/USDT' AND timeframe='1d' AND exchange='binance'
+              ORDER BY timestamp DESC LIMIT 5
+          """).fetchall()
+          print('--- ADA/USDT 1d binance (top 5 by ts desc) ---')
+          for ts, ex in q:
+              print(f'  {ts}  {ex}')
+          q2 = con.execute("""
+              SELECT DISTINCT exchange FROM ohlcv WHERE symbol='ADA/USDT' AND timeframe='1d'
+          """).fetchall()
+          print('--- Distinct exchanges for ADA/USDT 1d ---')
+          for (ex,) in q2:
+              print(f'  {ex}')
           PY
           echo
           echo "=== Collector logs (last 150 lines) ==="
