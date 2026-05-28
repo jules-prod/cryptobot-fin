@@ -116,19 +116,19 @@ def page() -> None:
         elif not signals:
             st.warning(t("dashboard.no_ohlcv_data", symbol=symbol, timeframe=timeframe))
         else:
-            # API retourne DESC ; on reverse pour ASC (chronologique)
-            chart_data = list(reversed(signals))
+            # API retourne ASC (chronologique) — pas de reverse
+            chart_data = signals
             fig = render_candlestick(chart_data, symbol, timeframe)
             st.plotly_chart(fig, use_container_width=True)
 
-        # Métriques : dernière bougie (première en DESC)
-        latest = signals[0] if signals else None
+        # Métriques : dernière bougie (dernière en ASC)
+        latest = signals[-1] if signals else None
         render_indicator_summary(latest)
 
     if signals:
         with st.container(border=True):
             st.subheader(t("dashboard.signals_header"))
-            df = _build_table(signals[:20])
+            df = _build_table(list(reversed(signals[-20:])))
             st.dataframe(df, use_container_width=True, hide_index=True)
 
 
