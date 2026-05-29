@@ -46,25 +46,22 @@ etl_duration_seconds = Histogram(
 )
 
 
-_SETUP_DONE = False
-
-
 def setup_observability(app: "FastAPI") -> None:
     """Wire prometheus, OTel and structlog into ``app``.
 
-    Idempotent: subsequent calls are no-ops. Every optional step is wrapped in
-    try/except so that a failure of one subsystem cannot break the app.
+    Idempotent per-app: a flag is stored on ``app.state`` so subsequent calls
+    on the same app are no-ops. Every optional step is wrapped in try/except
+    so that a failure of one subsystem cannot break the app.
     """
-    global _SETUP_DONE
-    if _SETUP_DONE:
-        logger.debug("setup_observability already ran, skipping")
+    if getattr(app.state, "_observability_done", False):
+        logger.debug("setup_observability already ran for this app, skipping")
         return
 
     _setup_structlog()
     _setup_prometheus(app)
     _setup_otel(app)
 
-    _SETUP_DONE = True
+    app.state._observability_done = True
 
 
 def _setup_structlog() -> None:
