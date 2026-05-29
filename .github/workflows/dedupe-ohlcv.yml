@@ -24,37 +24,22 @@ jobs:
           echo "VPS_HOST_CLEAN=$VPS_HOST" >> $GITHUB_ENV
           ssh-keyscan -T 30 -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Dedupe + add UNIQUE index
+      - name: Investigate BTC 1h actual timestamps (last 20)
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose exec -T api python - <<PYEOF
           import sqlite3
           con = sqlite3.connect("/app/data/processed/crypto_data.db")
-          cur = con.cursor()
-
-          print("=== BEFORE ===")
-          for s, tf, n in cur.execute("SELECT symbol, timeframe, COUNT(*) FROM ohlcv GROUP BY symbol, timeframe ORDER BY symbol, timeframe").fetchall():
-              print(f"{s:10s} {tf:3s}  n={n}")
-
-          # Keep only the row with MIN(rowid) for each (symbol, timeframe, exchange, timestamp)
-          cur.execute("""
-              DELETE FROM ohlcv WHERE rowid NOT IN (
-                  SELECT MIN(rowid) FROM ohlcv GROUP BY symbol, timeframe, exchange, timestamp
-              )
-          """)
-          deleted = cur.rowcount
-          con.commit()
-          print(f"Deleted {deleted} duplicate rows")
-
-          # Add UNIQUE index to prevent future duplicates (idempotent)
-          cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS ux_ohlcv_unique ON ohlcv (symbol, timeframe, exchange, timestamp)")
-          con.commit()
-          print("Added UNIQUE index ux_ohlcv_unique")
-
-          print("=== AFTER ===")
-          for s, tf, n in cur.execute("SELECT symbol, timeframe, COUNT(*) FROM ohlcv GROUP BY symbol, timeframe ORDER BY symbol, timeframe").fetchall():
-              print(f"{s:10s} {tf:3s}  n={n}")
+          # last 20 BTC 1h binance
+          rows = con.execute("SELECT timestamp FROM ohlcv WHERE symbol=\"BTC/USDT\" AND timeframe=\"1h\" AND exchange=\"binance\" ORDER BY timestamp DESC LIMIT 20").fetchall()
+          print("=== BTC 1h binance: last 20 timestamps DESC ===")
+          for (ts,) in rows: print(f"  {ts}")
+          print()
+          # count by date
+          rows = con.execute("SELECT DATE(timestamp) AS d, COUNT(*) FROM ohlcv WHERE symbol=\"BTC/USDT\" AND timeframe=\"1h\" AND exchange=\"binance\" AND timestamp >= \"2026-05-10\" GROUP BY DATE(timestamp) ORDER BY d").fetchall()
+          print("=== BTC 1h binance count per day (since May 10) ===")
+          for d, n in rows: print(f"  {d}  n={n}")
           PYEOF'
 
-      - name: Restart frontend (clear cache)
+      - name: Restart api + frontend
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose restart frontend && sleep 4 && docker compose ps frontend'
+          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose restart api frontend && sleep 8 && docker compose ps'
