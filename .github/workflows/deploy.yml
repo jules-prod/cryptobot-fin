@@ -73,6 +73,29 @@ jobs:
         run: |
           ansible-playbook -i inventories/production.rendered.ini playbooks/deploy.yml -v
 
+      - name: Diagnose VPS on deploy failure
+        if: failure()
+        env:
+          VPS_HOST_RAW: ${{ secrets.VPS_HOST }}
+        run: |
+          VPS_HOST=$(printf '%s' "$VPS_HOST_RAW" | tr -d '\n\r\t ')
+          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST 'bash -s' <<"DIAG"
+          set +e
+          echo "=== free -h ==="
+          free -h
+          echo "=== df -h ==="
+          df -h /
+          echo "=== docker compose ps ==="
+          cd /home/ubuntu/cryptobot && docker compose ps -a
+          echo "=== docker compose logs (last 50 lines per service) ==="
+          for svc in api frontend collector mlflow prometheus loki tempo otel-collector grafana; do
+            echo "--- $svc ---"
+            docker compose logs --tail=50 "$svc" 2>&1 | tail -60
+          done
+          echo "=== last 30 lines of dmesg (OOM kills?) ==="
+          sudo dmesg | tail -30
+          DIAG
+
       - name: External smoke test
         run: |
           set -euo pipefail
