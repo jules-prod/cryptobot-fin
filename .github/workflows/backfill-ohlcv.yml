@@ -24,7 +24,7 @@ jobs:
           echo "VPS_HOST_CLEAN=$VPS_HOST" >> $GITHUB_ENV
           ssh-keyscan -T 30 -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Run backfill (60 days for 1h, 90 days for 4h, all symbols)
+      - name: Aggressive backfill (365d 1h, 730d 4h, 1825d 1d)
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose exec -T api python - <<PYEOF
           import ccxt, sqlite3, time
@@ -32,7 +32,7 @@ jobs:
 
           DB = "/app/data/processed/crypto_data.db"
           SYMBOLS = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "ADA/USDT", "BNB/USDT"]
-          TFS = {"1h": 60, "4h": 90, "1d": 365}  # tf -> days back
+          TFS = {"1h": 365, "4h": 730, "1d": 1825}
 
           ex = ccxt.binance({"enableRateLimit": True})
           con = sqlite3.connect(DB)
@@ -42,37 +42,40 @@ jobs:
           for symbol in SYMBOLS:
               for tf, days_back in TFS.items():
                   since = int((datetime.now(timezone.utc) - timedelta(days=days_back)).timestamp() * 1000)
-                  all_candles = []
                   fetched = 0
+                  inserted_here = 0
                   while True:
                       batch = ex.fetch_ohlcv(symbol, tf, since=since, limit=1000)
-                      if not batch:
-                          break
-                      all_candles.extend(batch)
+                      if not batch: break
+                      rows = [(symbol, tf, "binance", datetime.fromtimestamp(c[0]/1000, tz=timezone.utc).replace(tzinfo=None).isoformat(sep=" "), c[1], c[2], c[3], c[4], c[5]) for c in batch]
+                      cur.executemany("INSERT OR IGNORE INTO ohlcv (symbol, timeframe, exchange, timestamp, open, high, low, close, volume) VALUES (?,?,?,?,?,?,?,?,?)", rows)
+                      inserted_here += cur.rowcount
+                      con.commit()
                       since = batch[-1][0] + 1
                       fetched += len(batch)
-                      if len(batch) < 1000:
-                          break
+                      if len(batch) < 1000: break
                       time.sleep(0.3)
-                  # Insert with INSERT OR IGNORE on (symbol, timeframe, timestamp, exchange)
-                  rows = [(symbol, tf, "binance", datetime.fromtimestamp(c[0]/1000, tz=timezone.utc).replace(tzinfo=None).isoformat(sep=" "), c[1], c[2], c[3], c[4], c[5]) for c in all_candles]
-                  cur.executemany(
-                      "INSERT OR IGNORE INTO ohlcv (symbol, timeframe, exchange, timestamp, open, high, low, close, volume) VALUES (?,?,?,?,?,?,?,?,?)",
-                      rows
-                  )
-                  inserted = cur.rowcount
-                  con.commit()
-                  print(f"{symbol:10s} {tf:3s}  fetched={fetched:5d}  inserted_new={inserted}")
-                  inserted_total += inserted
+                  print(f"{symbol:10s} {tf:3s}  fetched={fetched:6d}  inserted_new={inserted_here}")
+                  inserted_total += inserted_here
           print(f"TOTAL inserted: {inserted_total}")
           PYEOF'
 
-      - name: Verify freshness post-backfill
+      - name: Verify per-day BTC 1h coverage since April
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose exec -T api python - <<PYEOF
           import sqlite3
           con = sqlite3.connect("/app/data/processed/crypto_data.db")
-          rows = con.execute("SELECT symbol, timeframe, COUNT(*), MIN(timestamp), MAX(timestamp) FROM ohlcv WHERE exchange=\"binance\" GROUP BY symbol, timeframe ORDER BY symbol, timeframe").fetchall()
-          for s, tf, n, mn, mx in rows:
-              print(f"{s:10s} {tf:3s}  n={n:6d}  min={mn}  max={mx}")
+          # BTC 1h per day since April
+          rows = con.execute("SELECT DATE(timestamp), COUNT(*) FROM ohlcv WHERE symbol=\"BTC/USDT\" AND timeframe=\"1h\" AND exchange=\"binance\" AND timestamp >= \"2026-04-01\" GROUP BY DATE(timestamp) ORDER BY DATE(timestamp)").fetchall()
+          print("=== BTC 1h per day since April (expect 24/day) ===")
+          for d, n in rows: print(f"  {d}  n={n}")
+          # overall counts
+          print()
+          print("=== Totals per (symbol, timeframe) binance ===")
+          for s, tf, n in con.execute("SELECT symbol, timeframe, COUNT(*) FROM ohlcv WHERE exchange=\"binance\" GROUP BY symbol, timeframe ORDER BY symbol, timeframe").fetchall():
+              print(f"  {s:10s} {tf:3s}  n={n}")
           PYEOF'
+
+      - name: Restart api + frontend
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose restart api frontend && sleep 6'
