@@ -27,7 +27,7 @@ jobs:
       - name: Wipe binance OHLCV + refetch clean (365d 1h, 730d 4h, 1825d 1d)
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose exec -T api python - <<PYEOF
-          import ccxt, sqlite3, time
+          import ccxt, sqlite3, time, uuid
           from datetime import datetime, timezone, timedelta
 
           DB = "/app/data/processed/crypto_data.db"
@@ -41,9 +41,7 @@ jobs:
           for s in SYMBOLS:
               cur.execute("DELETE FROM ohlcv WHERE exchange=? AND symbol=?", ("binance", s))
           con.commit()
-          print(f"Wiped binance rows. Total before refetch:")
-          for s, tf, n in cur.execute("SELECT symbol, timeframe, COUNT(*) FROM ohlcv WHERE exchange=\"binance\" GROUP BY symbol, timeframe").fetchall():
-              print(f"  {s:10s} {tf:3s}  n={n}")
+          print("Wiped binance rows.")
 
           ex = ccxt.binance({"enableRateLimit": True})
           inserted_total = 0
@@ -54,11 +52,18 @@ jobs:
                   while True:
                       batch = ex.fetch_ohlcv(symbol, tf, since=since, limit=1000)
                       if not batch: break
-                      # Normalized timestamp WITHOUT microseconds
-                      rows = [(symbol, tf, "binance",
-                               datetime.fromtimestamp(c[0]/1000, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
-                               c[1], c[2], c[3], c[4], c[5]) for c in batch]
-                      cur.executemany("INSERT INTO ohlcv (symbol, timeframe, exchange, timestamp, open, high, low, close, volume) VALUES (?,?,?,?,?,?,?,?,?)", rows)
+                      now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+                      rows = []
+                      for c in batch:
+                          ts = datetime.fromtimestamp(c[0]/1000, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+                          date_str = ts[:10]
+                          row_id = str(uuid.uuid4())
+                          o, h, l, cl, v = c[1], c[2], c[3], c[4], c[5]
+                          rows.append((row_id, ts, symbol, tf, o, h, l, cl, v, h - l, cl - o, ((cl - o) / o * 100) if o else 0, date_str, "binance", now_iso, now_iso))
+                      cur.executemany(
+                          "INSERT INTO ohlcv (id, timestamp, symbol, timeframe, open, high, low, close, volume, price_range, price_change, price_change_pct, date, exchange, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                          rows
+                      )
                       con.commit()
                       inserted_total += len(batch)
                       since = batch[-1][0] + 1
@@ -69,21 +74,20 @@ jobs:
           print(f"TOTAL inserted: {inserted_total}")
           PYEOF'
 
-      - name: Verify per-day BTC 1h coverage
+      - name: Verify per-day BTC 1h coverage (anomalies only)
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose exec -T api python - <<PYEOF
           import sqlite3
           con = sqlite3.connect("/app/data/processed/crypto_data.db")
-          print("=== BTC 1h binance days with count != 24 ===")
           rows = con.execute("SELECT DATE(timestamp), COUNT(*) FROM ohlcv WHERE symbol=\"BTC/USDT\" AND timeframe=\"1h\" AND exchange=\"binance\" GROUP BY DATE(timestamp) HAVING COUNT(*) != 24 ORDER BY DATE(timestamp)").fetchall()
           if not rows:
-              print("  ALL DAYS HAVE EXACTLY 24 HOURS")
+              print("BTC 1h: ALL DAYS HAVE EXACTLY 24 HOURS ✅")
           else:
+              print("BTC 1h anomalous days:")
               for d, n in rows: print(f"  {d}  n={n}")
           print()
-          print("=== Totals binance ===")
-          for s, tf, n in con.execute("SELECT symbol, timeframe, COUNT(*) FROM ohlcv WHERE exchange=\"binance\" GROUP BY symbol, timeframe ORDER BY symbol, timeframe").fetchall():
-              print(f"  {s:10s} {tf:3s}  n={n}")
+          for s, tf, n, mn, mx in con.execute("SELECT symbol, timeframe, COUNT(*), MIN(timestamp), MAX(timestamp) FROM ohlcv WHERE exchange=\"binance\" GROUP BY symbol, timeframe ORDER BY symbol, timeframe").fetchall():
+              print(f"  {s:10s} {tf:3s}  n={n:6d}  min={mn}  max={mx}")
           PYEOF'
 
       - name: Restart api + frontend
