@@ -19,7 +19,7 @@ import feedparser  # type: ignore[import-untyped]
 import httpx
 
 from src.ml.nlp.text_mining import extract_keywords, extract_entities, detect_topics
-from api.observability import news_collected_total
+from src.metrics import news_collected_total
 
 logger = logging.getLogger(__name__)
 

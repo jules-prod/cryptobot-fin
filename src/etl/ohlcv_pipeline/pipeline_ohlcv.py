@@ -9,7 +9,7 @@ from typing import List, Dict, Optional
 from dataclasses import dataclass
 from datetime import datetime
 from logger_settings import logger
-from api.observability import etl_duration_seconds
+from src.metrics import etl_duration_seconds
 from src.etl.ohlcv_pipeline.extractor import OHLCVExtractor, ExtractionError
 from src.etl.ohlcv_pipeline.transformer import OHLCVTransformer, TransformationError
 from src.etl.ohlcv_pipeline.loader import OHLCVLoader, LoadingError

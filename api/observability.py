@@ -15,35 +15,26 @@ import logging
 import os
 from typing import TYPE_CHECKING
 
-from prometheus_client import Counter, Histogram
+from src.metrics import (
+    candles_ingested_total,
+    etl_duration_seconds,
+    news_collected_total,
+)
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Custom business metrics — declared once at import time, instrumented from
-# the collectors / ETL pipeline modules.
-# ---------------------------------------------------------------------------
-
-candles_ingested_total = Counter(
+# Re-export shared metrics so existing ``from api.observability import X``
+# call sites keep working. Canonical definitions live in ``src/metrics.py``
+# because the collector image only copies ``src/`` (no ``api/``).
+__all__ = [
     "candles_ingested_total",
-    "Total number of OHLCV candles successfully ingested.",
-    labelnames=("symbol", "timeframe", "exchange"),
-)
-
-news_collected_total = Counter(
     "news_collected_total",
-    "Total number of news articles successfully collected.",
-    labelnames=("source",),
-)
-
-etl_duration_seconds = Histogram(
     "etl_duration_seconds",
-    "Duration of an ETL pipeline run in seconds.",
-    labelnames=("pipeline",),
-)
+    "setup_observability",
+]
 
 
 def setup_observability(app: "FastAPI") -> None:

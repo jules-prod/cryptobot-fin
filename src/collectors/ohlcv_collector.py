@@ -1,5 +1,5 @@
 from logger_settings import logger
-from api.observability import candles_ingested_total
+from src.metrics import candles_ingested_total
 from src.services.exchange_factory import ExchangeFactory
 from src.services.db_context import database_transaction
 from src.services.exchange_context import ExchangeClient
