@@ -77,7 +77,12 @@ jobs:
           echo "=== docker images SHA + restart times ==="
           docker compose ps --format 'table {{.Name}}\t{{.Image}}\t{{.RunningFor}}\t{{.Status}}'
           echo
-          echo "=== Collector logs (last 150 lines) ==="
+          echo "=== Restart frontend container (clear Streamlit cache) ==="
+          docker compose restart frontend
+          sleep 3
+          docker compose ps frontend
+          echo
+          echo "=== Collector logs (last 80 lines) ==="
           docker compose logs --tail=150 collector || true
           echo
           echo "=== API logs (last 60 lines) ==="
