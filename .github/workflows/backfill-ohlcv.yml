@@ -24,6 +24,10 @@ jobs:
           echo "VPS_HOST_CLEAN=$VPS_HOST" >> $GITHUB_ENV
           ssh-keyscan -T 30 -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
+      - name: Ensure api is up
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose up -d api && sleep 15 && docker compose ps api'
+
       - name: Wipe binance OHLCV + refetch clean (365d 1h, 730d 4h, 1825d 1d)
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose exec -T api python - <<PYEOF
