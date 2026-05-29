@@ -51,5 +51,5 @@ app_services:
   - collector
 
 # Observability admin credentials (from GH Actions extra-vars via secrets)
-grafana_admin_user: "{{ lookup('env', 'GRAFANA_ADMIN_USER') | default('admin', true) }}"
-grafana_admin_password: "{{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') | default('changeme', true) }}"
+grafana_admin_user: "{{ lookup('env', 'GRAFANA_ADMIN_USER') | default('admin', true) | trim }}"
+grafana_admin_password: "{{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') | default('changeme', true) | trim }}"
