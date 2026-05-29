@@ -57,6 +57,41 @@
         regexp: '^GF_SECURITY_ADMIN_PASSWORD='
         line: "GF_SECURITY_ADMIN_PASSWORD={{ grafana_admin_password }}"
 
+    - name: Ensure SMTP_HOST in .env
+      lineinfile:
+        path: "{{ docker_compose_dir }}/.env"
+        regexp: '^SMTP_HOST='
+        line: "SMTP_HOST={{ smtp_host }}"
+        create: false
+
+    - name: Ensure SMTP_USER in .env
+      lineinfile:
+        path: "{{ docker_compose_dir }}/.env"
+        regexp: '^SMTP_USER='
+        line: "SMTP_USER={{ smtp_user }}"
+        create: false
+
+    - name: Ensure SMTP_PASSWORD in .env
+      lineinfile:
+        path: "{{ docker_compose_dir }}/.env"
+        regexp: '^SMTP_PASSWORD='
+        line: "SMTP_PASSWORD={{ smtp_password }}"
+        create: false
+
+    - name: Ensure SMTP_FROM in .env
+      lineinfile:
+        path: "{{ docker_compose_dir }}/.env"
+        regexp: '^SMTP_FROM='
+        line: "SMTP_FROM={{ smtp_from }}"
+        create: false
+
+    - name: Ensure ALERT_EMAIL_TO in .env
+      lineinfile:
+        path: "{{ docker_compose_dir }}/.env"
+        regexp: '^ALERT_EMAIL_TO='
+        line: "ALERT_EMAIL_TO={{ alert_email_to }}"
+        create: false
+
     - name: Make deploy script executable
       file:
         path: "{{ docker_compose_dir }}/scripts/deploy.sh"

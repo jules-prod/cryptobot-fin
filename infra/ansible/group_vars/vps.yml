@@ -53,3 +53,10 @@ app_services:
 # Observability admin credentials (from GH Actions extra-vars via secrets)
 grafana_admin_user: "{{ lookup('env', 'GRAFANA_ADMIN_USER') | default('admin', true) | trim }}"
 grafana_admin_password: "{{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') | default('changeme', true) | trim }}"
+
+# SMTP / alerting secrets (from GH Actions secrets via environment)
+smtp_host: "{{ lookup('env', 'SMTP_HOST') | default('smtp.gmail.com:587', true) | trim }}"
+smtp_user: "{{ lookup('env', 'SMTP_USER') | default('', true) | trim }}"
+smtp_password: "{{ lookup('env', 'SMTP_PASSWORD') | default('', true) | trim }}"
+smtp_from: "{{ lookup('env', 'SMTP_FROM') | default('', true) | trim }}"
+alert_email_to: "{{ lookup('env', 'ALERT_EMAIL_TO') | default('', true) | trim }}"
