@@ -19,6 +19,11 @@ from src.metrics import (
     candles_ingested_total,
     etl_duration_seconds,
     news_collected_total,
+    paper_balance_usd,
+    paper_pnl_total,
+    paper_trades_total,
+    paper_win_ratio,
+    signals_computed_total,
 )
 
 if TYPE_CHECKING:
@@ -33,6 +38,11 @@ __all__ = [
     "candles_ingested_total",
     "news_collected_total",
     "etl_duration_seconds",
+    "signals_computed_total",
+    "paper_trades_total",
+    "paper_balance_usd",
+    "paper_pnl_total",
+    "paper_win_ratio",
     "setup_observability",
 ]
 

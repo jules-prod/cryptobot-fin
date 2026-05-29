@@ -14,6 +14,7 @@ from src.models.ohlcv import OHLCV
 from src.analytics.technical_calculator import TechnicalCalculator
 from src.analytics.technical_signals import TechnicalSignals
 from src.analytics.signal_scorer import score_candle
+from src.metrics import signals_computed_total
 
 router = APIRouter(prefix="/signals", tags=["signals"])
 
@@ -112,6 +113,8 @@ def get_signals(
             macd_cross_up=bool(cross_up_series.iloc[i]),
             macd_cross_down=bool(cross_down_series.iloc[i]),
         )
+        signals_computed_total.labels(symbol=row["symbol"], signal_type=sig).inc()
+
 
         results.append(
             SignalResponse(

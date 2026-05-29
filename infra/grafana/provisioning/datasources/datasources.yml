@@ -48,3 +48,13 @@ datasources:
     editable: false
     jsonData:
       path: /app/data/processed/crypto_data.db
+
+  - name: MLflow
+    type: yesoreyeram-infinity-datasource
+    uid: mlflow-ds
+    access: proxy
+    url: http://mlflow:5000
+    editable: true
+    jsonData:
+      global_queries: []
+
