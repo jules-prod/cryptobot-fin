@@ -1,4 +1,5 @@
 from logger_settings import logger
+from api.observability import candles_ingested_total
 from src.services.exchange_factory import ExchangeFactory
 from src.services.db_context import database_transaction
 from src.services.exchange_context import ExchangeClient
@@ -97,6 +98,12 @@ class OHLCVCollector:
                     for symbol, result in batch_results.items():
                         key = f"{symbol}_{timeframe}"
                         all_batch_results[key] = result
+                        if result.success and result.loaded_rows > 0:
+                            candles_ingested_total.labels(
+                                symbol=symbol,
+                                timeframe=timeframe,
+                                exchange=self.exchange,
+                            ).inc(result.loaded_rows)
 
         # Générer un résumé des résultats
         summary = self.pipeline.get_summary(all_batch_results)

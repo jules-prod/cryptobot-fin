@@ -19,6 +19,7 @@ import feedparser  # type: ignore[import-untyped]
 import httpx
 
 from src.ml.nlp.text_mining import extract_keywords, extract_entities, detect_topics
+from api.observability import news_collected_total
 
 logger = logging.getLogger(__name__)
 
@@ -195,6 +196,7 @@ class NewsCollector:
                 topics=art.topics,
             ))
             stored += 1
+            news_collected_total.labels(source=art.source).inc()
 
         db.commit()
         logger.info("Stored %d articles, skipped %d duplicates", stored, skipped)

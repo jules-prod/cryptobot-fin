@@ -232,6 +232,15 @@ signal.signal(signal.SIGTERM, _handle_sigterm)
 
 
 if __name__ == "__main__":
+    # Expose prometheus metrics on :8001 (collector container, scraped by prometheus)
+    try:
+        from prometheus_client import start_http_server
+
+        start_http_server(8001)
+        logger.info("📈 Prometheus metrics server started on :8001")
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.warning(f"Failed to start prometheus metrics server: {exc}")
+
     args = parse_arguments()
 
     # Mettre à jour la configuration avec les arguments de ligne de commande

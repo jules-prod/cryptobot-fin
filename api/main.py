@@ -10,6 +10,7 @@ from sqlalchemy import inspect, text
 
 from api.routers import health, ohlcv, market, signals, news, ml, alerts, paper_trading
 from api.dependencies import engine
+from api.observability import setup_observability
 from src.models.ohlcv import Base as OHLCVBase
 from src.models.ticker import Base as TickerBase
 from src.models.market_data_base import MarketDataBase
@@ -30,7 +31,7 @@ PaperTradeBase.metadata.create_all(bind=engine)
 # Uses inspect() to check existing columns — works on SQLite and PostgreSQL.
 _NEW_COLUMNS = [
     ("entities", "JSON"),
-    ("topics",   "JSON"),
+    ("topics", "JSON"),
 ]
 _existing_cols = {col["name"] for col in inspect(engine).get_columns("news_articles")}
 with engine.connect() as _conn:
@@ -44,11 +45,13 @@ with engine.connect() as _conn:
 async def lifespan(app: FastAPI):
     # Démarrage du collecteur de prix WebSocket (thread daemon)
     from src.collectors.ws_price_collector import start_ws_collector
+
     pairs = config.get("pairs", [])
     if pairs:
         start_ws_collector(pairs)
     # Démarrage du scheduler news RSS (thread daemon, 60 min interval)
     from src.services.news_scheduler import start_news_scheduler
+
     start_news_scheduler(interval_minutes=60)
     yield
     # Arrêt : le thread est daemon, il se termine avec le process
@@ -67,6 +70,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+setup_observability(app)
 
 app.include_router(health.router)
 app.include_router(ohlcv.router)
