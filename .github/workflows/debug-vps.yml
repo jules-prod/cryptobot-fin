@@ -24,6 +24,24 @@ jobs:
           echo "VPS_HOST_CLEAN=$VPS_HOST" >> $GITHUB_ENV
           ssh-keyscan -T 30 -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Print last 25 timestamps of limit=200 response
+      - name: Recent API calls from frontend
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose exec -T api curl -s "http://localhost:8000/signals?symbol=ADA/USDT&timeframe=1d&limit=200&exchange=binance" | python3 -c "import sys,json; d=json.load(sys.stdin); print(\"total:\",len(d)); [print(i, r[\"timestamp\"], r[\"close\"]) for i,r in enumerate(d[-25:])]"'
+          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose logs --tail=200 api | grep -E "GET /signals|GET /ohlcv" | tail -40'
+
+      - name: Run fetch_signals from inside frontend container
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose exec -T frontend python -c "
+          import sys; sys.path.insert(0, \"/app\")
+          from frontend.api_client import APIClient
+          from frontend.config import frontend_settings
+          print(\"api_url:\", frontend_settings.api_url)
+          print(\"default_exchange:\", repr(frontend_settings.default_exchange))
+          c = APIClient()
+          r = c.fetch_signals(\"ADA/USDT\", \"1d\", limit=200, exchange=frontend_settings.default_exchange)
+          print(\"len:\", len(r) if r else None)
+          if r:
+              print(\"first:\", r[0][\"timestamp\"])
+              print(\"last:\", r[-1][\"timestamp\"])
+              print(\"signals[-5:]:\")
+              for x in r[-5:]: print(\"  \", x[\"timestamp\"], x[\"close\"])
+          "'
