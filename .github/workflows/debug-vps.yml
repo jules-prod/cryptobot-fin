@@ -24,15 +24,6 @@ jobs:
           echo "VPS_HOST_CLEAN=$VPS_HOST" >> $GITHUB_ENV
           ssh-keyscan -T 30 -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Test limit=200 + duplicate check
+      - name: Print last 25 timestamps of limit=200 response
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose exec -T api curl -s "http://localhost:8000/signals?symbol=ADA/USDT&timeframe=1d&limit=200&exchange=binance" | python3 -c "import sys,json; d=json.load(sys.stdin); print(\"items:\",len(d)); print(\"first:\",d[0][\"timestamp\"] if d else None); print(\"last:\",d[-1][\"timestamp\"] if d else None)"'
-          echo "--- Duplicate check ---"
-          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose exec -T api python -c "
-          import sqlite3
-          con=sqlite3.connect(\"/app/data/processed/crypto_data.db\")
-          r=con.execute(\"SELECT timestamp,COUNT(*) FROM ohlcv WHERE symbol=\x27ADA/USDT\x27 AND timeframe=\x271d\x27 AND exchange=\x27binance\x27 GROUP BY timestamp HAVING COUNT(*)>1 ORDER BY timestamp DESC LIMIT 10\").fetchall()
-          print(\"dup ts (top 10):\", r)
-          r2=con.execute(\"SELECT COUNT(DISTINCT timestamp), COUNT(*) FROM ohlcv WHERE symbol=\x27ADA/USDT\x27 AND timeframe=\x271d\x27 AND exchange=\x27binance\x27\").fetchone()
-          print(\"distinct/total:\", r2)
-          "'
+          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose exec -T api curl -s "http://localhost:8000/signals?symbol=ADA/USDT&timeframe=1d&limit=200&exchange=binance" | python3 -c "import sys,json; d=json.load(sys.stdin); print(\"total:\",len(d)); [print(i, r[\"timestamp\"], r[\"close\"]) for i,r in enumerate(d[-25:])]"'
