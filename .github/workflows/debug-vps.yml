@@ -24,24 +24,6 @@ jobs:
           echo "VPS_HOST_CLEAN=$VPS_HOST" >> $GITHUB_ENV
           ssh-keyscan -T 30 -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Diag
+      - name: Recreate frontend (force fresh Streamlit cache)
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN bash -s <<'REMOTE'
-          set -e
-          cd ~/cryptobot
-          echo "=== deployed dashboard.py (lines 115-135) ==="
-          docker compose exec -T frontend sed -n '115,135p' /app/frontend/pages/1_dashboard.py || true
-          echo
-          echo "=== git rev on disk ==="
-          git -C ~/cryptobot log --oneline -3 2>/dev/null || ls ~/cryptobot
-          echo
-          echo "=== api curl signals ==="
-          docker compose exec -T api curl -s 'http://localhost:8000/signals?symbol=ADA/USDT&timeframe=1d&limit=10&exchange=binance' | python3 -c "import sys,json; d=json.load(sys.stdin); print('items:',len(d) if isinstance(d,list) else d); [print('  ',r['timestamp'],r['close']) for r in (d if isinstance(d,list) else [])]" || true
-          echo
-          echo "=== Stop frontend, prune cache, restart ==="
-          docker compose stop frontend
-          docker compose rm -f frontend
-          docker compose up -d frontend
-          sleep 4
-          docker compose ps frontend
-          REMOTE
+          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose up -d --force-recreate --no-deps frontend && sleep 6 && docker compose ps frontend'
