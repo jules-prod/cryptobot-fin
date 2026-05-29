@@ -89,6 +89,21 @@
         mode: "0644"
       notify: Reload nginx
 
+    - name: Ensure apache2-utils installed (for htpasswd)
+      apt:
+        name: apache2-utils
+        state: present
+
+    - name: Create htpasswd for observability endpoints
+      community.general.htpasswd:
+        path: /etc/nginx/.htpasswd-observability
+        name: "{{ grafana_admin_user }}"
+        password: "{{ grafana_admin_password }}"
+        crypt_scheme: bcrypt
+        mode: "0640"
+        owner: root
+        group: www-data
+
     - name: Template cryptobot vhost
       template:
         src: ../templates/nginx-vhost.conf.j2
