@@ -136,7 +136,8 @@ def page() -> None:
 
     col_sym, col_tf, col_lim = st.columns([2, 1, 1])
     with col_sym:
-        symbol = st.selectbox(t("signals.symbol"), available_symbols)
+        sym_default = available_symbols.index("BTC/USDT") if "BTC/USDT" in available_symbols else 0
+        symbol = st.selectbox(t("signals.symbol"), available_symbols, index=sym_default)
     with col_tf:
         tf_default = available_timeframes.index("1d") if "1d" in available_timeframes else 0
         timeframe = st.selectbox(t("signals.timeframe"), available_timeframes, index=tf_default)

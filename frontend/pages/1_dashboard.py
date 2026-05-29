@@ -96,7 +96,9 @@ def page() -> None:
 
     col_sym, col_tf, col_refresh = st.columns([2, 1, 1])
     with col_sym:
-        symbol: str = st.selectbox(t("dashboard.crypto"), available_symbols)
+        # Default to BTC/USDT when present (most liquid pair)
+        sym_default = available_symbols.index("BTC/USDT") if "BTC/USDT" in available_symbols else 0
+        symbol: str = st.selectbox(t("dashboard.crypto"), available_symbols, index=sym_default)
     with col_tf:
         # Default to "1d" if present, else first available timeframe
         tf_default = available_timeframes.index("1d") if "1d" in available_timeframes else 0
