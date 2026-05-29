@@ -1,0 +1,79 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: cryptobot-critical
+    folder: cryptobot
+    interval: 1m
+    rules:
+      - uid: alert-5xx-rate
+        title: API 5xx error rate > 1%
+        condition: A
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: '100 * sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) > 1'
+              refId: A
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        annotations:
+          summary: 'API 5xx rate above 1% for 5min'
+          description: 'Current value: {{ $values.A }}'
+        labels:
+          severity: critical
+      - uid: alert-p99-latency
+        title: API p99 latency > 1s
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: 'histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 1'
+              refId: A
+        for: 5m
+        annotations:
+          summary: 'API p99 latency above 1s for 5min'
+        labels:
+          severity: warning
+      - uid: alert-container-down
+        title: Container down
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 120
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: 'up{job=~"api|collector|frontend|mlflow"} == 0'
+              refId: A
+        for: 2m
+        annotations:
+          summary: 'Container {{ $labels.job }} is down'
+        labels:
+          severity: critical
+      - uid: alert-disk-usage
+        title: Disk usage > 80%
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 60
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: '(node_filesystem_size_bytes - node_filesystem_avail_bytes) / node_filesystem_size_bytes > 0.8'
+              refId: A
+        for: 10m
+        annotations:
+          summary: 'Disk usage above 80%'
+        labels:
+          severity: warning
