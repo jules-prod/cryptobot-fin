@@ -24,25 +24,27 @@ jobs:
           echo "VPS_HOST_CLEAN=$VPS_HOST" >> $GITHUB_ENV
           ssh-keyscan -T 30 -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: API signals payload BTC 1h limit=200 - check date span
+      - name: Write detect script and run inside api container
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose exec -T api curl -s "http://localhost:8000/signals?symbol=BTC/USDT&timeframe=1h&limit=200&exchange=binance" | python3 -c "
-          import sys, json
-          d = json.load(sys.stdin)
-          print(f\"total: {len(d)}\")
-          print(f\"first: {d[0][\\\"timestamp\\\"]}\")
-          print(f\"last:  {d[-1][\\\"timestamp\\\"]}\")
-          # Detect gaps > 1h
+          cat > /tmp/detect_gaps.py <<'PYEOF'
+          import json, sys
           from datetime import datetime
+          with open("/tmp/sig.json") as f:
+              d = json.load(f)
+          print(f"total: {len(d)}")
+          print(f"first: {d[0]['timestamp']}")
+          print(f"last:  {d[-1]['timestamp']}")
           prev = None
           gaps = 0
           for r in d:
-              t = datetime.fromisoformat(r[\"timestamp\"])
+              t = datetime.fromisoformat(r['timestamp'])
               if prev:
                   delta = (t - prev).total_seconds() / 3600
                   if delta > 1.5:
-                      print(f\"  GAP after {prev}: {delta:.1f}h missing\")
+                      print(f"  GAP after {prev}: {delta:.1f}h missing")
                       gaps += 1
               prev = t
-          print(f\"total gaps > 1.5h: {gaps}\")
-          "'
+          print(f"total gaps > 1.5h: {gaps}")
+          PYEOF
+          scp -o StrictHostKeyChecking=no /tmp/detect_gaps.py ubuntu@$VPS_HOST_CLEAN:/tmp/detect_gaps.py
+          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'docker cp /tmp/detect_gaps.py cryptobot-api-1:/tmp/detect_gaps.py && cd ~/cryptobot && docker compose exec -T api bash -c "curl -s '"'"'http://localhost:8000/signals?symbol=BTC/USDT&timeframe=1h&limit=200&exchange=binance'"'"' > /tmp/sig.json && python3 /tmp/detect_gaps.py"'
