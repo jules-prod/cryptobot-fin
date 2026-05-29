@@ -29,6 +29,9 @@
           - "--exclude=*.pyc"
           - "--exclude=.venv"
           - "--exclude=dev.db"
+          - "--exclude=data/processed/"
+          - "--exclude=data/raw/"
+          - "--exclude=mlflow-data/"
         delete: true
 
     - name: Verify .env file exists on VPS
