@@ -47,29 +47,8 @@ server {
         proxy_set_header X-Forwarded-Prefix /grafana;
     }
 
-    # Observability — Prometheus UI (basic-auth)
-    location /prometheus/ {
-        auth_basic "Observability";
-        auth_basic_user_file /etc/nginx/.htpasswd-observability;
-        include /etc/nginx/snippets/proxy-params.conf;
-        proxy_pass http://127.0.0.1:9090/;
-    }
-
-    # Observability — Loki API (basic-auth)
-    location /loki/ {
-        auth_basic "Observability";
-        auth_basic_user_file /etc/nginx/.htpasswd-observability;
-        include /etc/nginx/snippets/proxy-params.conf;
-        proxy_pass http://127.0.0.1:3100/;
-    }
-
-    # Observability — Tempo API (basic-auth)
-    location /tempo/ {
-        auth_basic "Observability";
-        auth_basic_user_file /etc/nginx/.htpasswd-observability;
-        include /etc/nginx/snippets/proxy-params.conf;
-        proxy_pass http://127.0.0.1:3200/;
-    }
+    # Prometheus / Loki / Tempo NOT exposed publicly — accessed only by Grafana
+    # via the docker crypto-net network. Less attack surface, simpler ops.
 
     # Streamlit dashboard + WebSocket (on /)
     location /crypto/ {
