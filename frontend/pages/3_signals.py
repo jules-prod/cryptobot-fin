@@ -175,7 +175,12 @@ def page() -> None:
 
     # ── Tableau ───────────────────────────────────────────────────────────────
     rows = []
-    for row in data:
+    seen_ts: set[str] = set()
+    for row in reversed(data):  # API renvoie ASC — on inverse pour afficher le plus récent en haut
+        ts_key = str(row.get("timestamp"))
+        if ts_key in seen_ts:  # dédup défensive contre doublons en DB
+            continue
+        seen_ts.add(ts_key)
         sig = row.get("signal") or "hold"
         score = row.get("signal_score")
         rows.append({
