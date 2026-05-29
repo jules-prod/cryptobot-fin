@@ -55,8 +55,11 @@
   ],
   "id": null,
   "uid": "cryptobot-trading",
-  "title": "CryptoBot — Trading Dashboard",
-  "tags": ["cryptobot", "trading"],
+  "title": "CryptoBot \u2014 Trading Dashboard",
+  "tags": [
+    "cryptobot",
+    "trading"
+  ],
   "schemaVersion": 39,
   "version": 1,
   "editable": true,
@@ -73,10 +76,15 @@
   "panels": [
     {
       "id": 1,
-      "title": "Row 1 — Vue d'ensemble",
+      "title": "Row 1 \u2014 Vue d'ensemble",
       "type": "row",
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "panels": []
     },
     {
@@ -88,10 +96,17 @@
         "type": "frser-sqlite-datasource",
         "uid": "sqlite-cryptobot"
       },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
       "options": {
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -111,8 +126,14 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "green", "value": 0 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 0
+              }
             ]
           },
           "mappings": []
@@ -124,23 +145,31 @@
           "refId": "A",
           "rawQueryText": "SELECT cash AS balance FROM paper_portfolios ORDER BY created_at DESC LIMIT 1",
           "queryType": "table",
-          "timeColumns": []
+          "timeColumns": [],
+          "queryText": "SELECT cash AS balance FROM paper_portfolios ORDER BY created_at DESC LIMIT 1"
         }
       ]
     },
     {
       "id": 3,
-      "title": "PnL cumulé (USD)",
+      "title": "PnL cumul\u00e9 (USD)",
       "type": "stat",
-      "description": "Somme des PnL réalisés sur trades fermés",
+      "description": "Somme des PnL r\u00e9alis\u00e9s sur trades ferm\u00e9s",
       "datasource": {
         "type": "frser-sqlite-datasource",
         "uid": "sqlite-cryptobot"
       },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
       "options": {
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -160,9 +189,18 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "red", "value": -0.001 },
-              { "color": "green", "value": 0 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": -0.001
+              },
+              {
+                "color": "green",
+                "value": 0
+              }
             ]
           },
           "mappings": []
@@ -174,7 +212,8 @@
           "refId": "A",
           "rawQueryText": "SELECT COALESCE(SUM(pnl), 0) AS total_pnl FROM paper_trades WHERE status='CLOSED'",
           "queryType": "table",
-          "timeColumns": []
+          "timeColumns": [],
+          "queryText": "SELECT COALESCE(SUM(pnl), 0) AS total_pnl FROM paper_trades WHERE status='CLOSED'"
         }
       ]
     },
@@ -182,15 +221,22 @@
       "id": 4,
       "title": "Win Rate (%)",
       "type": "gauge",
-      "description": "Pourcentage de trades gagnants (PnL > 0) parmi les trades fermés",
+      "description": "Pourcentage de trades gagnants (PnL > 0) parmi les trades ferm\u00e9s",
       "datasource": {
         "type": "frser-sqlite-datasource",
         "uid": "sqlite-cryptobot"
       },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
       "options": {
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -210,9 +256,18 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 40 },
-              { "color": "green", "value": 55 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 40
+              },
+              {
+                "color": "green",
+                "value": 55
+              }
             ]
           },
           "mappings": []
@@ -224,7 +279,8 @@
           "refId": "A",
           "rawQueryText": "SELECT 100.0 * SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) AS win_rate FROM paper_trades WHERE status='CLOSED'",
           "queryType": "table",
-          "timeColumns": []
+          "timeColumns": [],
+          "queryText": "SELECT 100.0 * SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0) AS win_rate FROM paper_trades WHERE status='CLOSED'"
         }
       ]
     },
@@ -237,10 +293,17 @@
         "type": "frser-sqlite-datasource",
         "uid": "sqlite-cryptobot"
       },
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
       "options": {
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -261,7 +324,10 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null }
+              {
+                "color": "green",
+                "value": null
+              }
             ]
           },
           "mappings": []
@@ -273,31 +339,48 @@
           "refId": "A",
           "rawQueryText": "SELECT COUNT(*) AS total_trades FROM paper_trades",
           "queryType": "table",
-          "timeColumns": []
+          "timeColumns": [],
+          "queryText": "SELECT COUNT(*) AS total_trades FROM paper_trades"
         }
       ]
     },
     {
       "id": 6,
-      "title": "Row 2 — Performance dans le temps",
+      "title": "Row 2 \u2014 Performance dans le temps",
       "type": "row",
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
       "panels": []
     },
     {
       "id": 7,
-      "title": "PnL cumulé (timeseries)",
+      "title": "PnL cumul\u00e9 (timeseries)",
       "type": "timeseries",
-      "description": "PnL cumulé au fil du temps sur les trades fermés",
+      "description": "PnL cumul\u00e9 au fil du temps sur les trades ferm\u00e9s",
       "datasource": {
         "type": "frser-sqlite-datasource",
         "uid": "sqlite-cryptobot"
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      },
       "options": {
-        "tooltip": { "mode": "single", "sort": "none" },
-        "legend": { "displayMode": "list", "placement": "bottom" }
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
       },
       "fieldConfig": {
         "defaults": {
@@ -317,8 +400,14 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "green", "value": 0 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 0
+              }
             ]
           },
           "mappings": []
@@ -330,7 +419,10 @@
           "refId": "A",
           "rawQueryText": "SELECT exit_time AS time, SUM(pnl) OVER (ORDER BY exit_time) AS cumulative_pnl FROM paper_trades WHERE status='CLOSED' AND exit_time IS NOT NULL ORDER BY exit_time",
           "queryType": "time series",
-          "timeColumns": ["time"]
+          "timeColumns": [
+            "time"
+          ],
+          "queryText": "SELECT exit_time AS time, SUM(pnl) OVER (ORDER BY exit_time) AS cumulative_pnl FROM paper_trades WHERE status='CLOSED' AND exit_time IS NOT NULL ORDER BY exit_time"
         }
       ]
     },
@@ -343,10 +435,21 @@
         "type": "frser-sqlite-datasource",
         "uid": "sqlite-cryptobot"
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      },
       "options": {
-        "tooltip": { "mode": "single", "sort": "none" },
-        "legend": { "displayMode": "list", "placement": "bottom" }
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
       },
       "fieldConfig": {
         "defaults": {
@@ -367,7 +470,10 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null }
+              {
+                "color": "green",
+                "value": null
+              }
             ]
           },
           "mappings": []
@@ -379,31 +485,46 @@
           "refId": "A",
           "rawQueryText": "SELECT date(entry_time) AS time, COUNT(*) AS trades FROM paper_trades GROUP BY date(entry_time) ORDER BY date(entry_time)",
           "queryType": "time series",
-          "timeColumns": ["time"]
+          "timeColumns": [
+            "time"
+          ],
+          "queryText": "SELECT date(entry_time) AS time, COUNT(*) AS trades FROM paper_trades GROUP BY date(entry_time) ORDER BY date(entry_time)"
         }
       ]
     },
     {
       "id": 9,
-      "title": "Row 3 — Distribution par symbol",
+      "title": "Row 3 \u2014 Distribution par symbol",
       "type": "row",
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      },
       "panels": []
     },
     {
       "id": 10,
       "title": "PnL par symbol",
       "type": "bargauge",
-      "description": "PnL total réalisé par paire de trading",
+      "description": "PnL total r\u00e9alis\u00e9 par paire de trading",
       "datasource": {
         "type": "frser-sqlite-datasource",
         "uid": "sqlite-cryptobot"
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 15
+      },
       "options": {
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": true
         },
@@ -426,8 +547,14 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "green", "value": 0 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 0
+              }
             ]
           },
           "mappings": []
@@ -439,7 +566,8 @@
           "refId": "A",
           "rawQueryText": "SELECT symbol, COALESCE(SUM(pnl), 0) AS pnl_sum FROM paper_trades WHERE status='CLOSED' GROUP BY symbol ORDER BY pnl_sum DESC",
           "queryType": "table",
-          "timeColumns": []
+          "timeColumns": [],
+          "queryText": "SELECT symbol, COALESCE(SUM(pnl), 0) AS pnl_sum FROM paper_trades WHERE status='CLOSED' GROUP BY symbol ORDER BY pnl_sum DESC"
         }
       ]
     },
@@ -452,11 +580,18 @@
         "type": "frser-sqlite-datasource",
         "uid": "sqlite-cryptobot"
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 15
+      },
       "options": {
         "footer": {
           "show": false,
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "fields": "",
           "enablePagination": false
         },
@@ -471,7 +606,10 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null }
+              {
+                "color": "green",
+                "value": null
+              }
             ]
           },
           "mappings": [],
@@ -483,10 +621,19 @@
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "win_rate" },
+            "matcher": {
+              "id": "byName",
+              "options": "win_rate"
+            },
             "properties": [
-              { "id": "unit", "value": "percent" },
-              { "id": "decimals", "value": 1 },
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
               {
                 "id": "custom.displayMode",
                 "value": "color-background"
@@ -496,19 +643,37 @@
                 "value": {
                   "mode": "absolute",
                   "steps": [
-                    { "color": "red", "value": null },
-                    { "color": "yellow", "value": 40 },
-                    { "color": "green", "value": 55 }
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 40
+                    },
+                    {
+                      "color": "green",
+                      "value": 55
+                    }
                   ]
                 }
               }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "pnl" },
+            "matcher": {
+              "id": "byName",
+              "options": "pnl"
+            },
             "properties": [
-              { "id": "unit", "value": "currencyUSD" },
-              { "id": "decimals", "value": 2 },
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              },
               {
                 "id": "custom.displayMode",
                 "value": "color-background"
@@ -518,8 +683,14 @@
                 "value": {
                   "mode": "absolute",
                   "steps": [
-                    { "color": "red", "value": null },
-                    { "color": "green", "value": 0 }
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 0
+                    }
                   ]
                 }
               }
@@ -532,32 +703,45 @@
           "refId": "A",
           "rawQueryText": "SELECT symbol, COUNT(*) AS n, ROUND(100.0 * SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) AS win_rate, ROUND(SUM(pnl), 2) AS pnl FROM paper_trades WHERE status='CLOSED' GROUP BY symbol ORDER BY pnl DESC",
           "queryType": "table",
-          "timeColumns": []
+          "timeColumns": [],
+          "queryText": "SELECT symbol, COUNT(*) AS n, ROUND(100.0 * SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) AS win_rate, ROUND(SUM(pnl), 2) AS pnl FROM paper_trades WHERE status='CLOSED' GROUP BY symbol ORDER BY pnl DESC"
         }
       ]
     },
     {
       "id": 12,
-      "title": "Row 4 — Top trades",
+      "title": "Row 4 \u2014 Top trades",
       "type": "row",
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      },
       "panels": []
     },
     {
       "id": 13,
       "title": "Top 10 winning trades",
       "type": "table",
-      "description": "Les 10 meilleurs trades par PnL décroissant",
+      "description": "Les 10 meilleurs trades par PnL d\u00e9croissant",
       "datasource": {
         "type": "frser-sqlite-datasource",
         "uid": "sqlite-cryptobot"
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
       "options": {
         "footer": {
           "show": false,
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "fields": "",
           "enablePagination": false
         },
@@ -572,7 +756,10 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null }
+              {
+                "color": "green",
+                "value": null
+              }
             ]
           },
           "mappings": [],
@@ -584,10 +771,19 @@
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "pnl" },
+            "matcher": {
+              "id": "byName",
+              "options": "pnl"
+            },
             "properties": [
-              { "id": "unit", "value": "currencyUSD" },
-              { "id": "decimals", "value": 2 },
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              },
               {
                 "id": "custom.displayMode",
                 "value": "color-background"
@@ -597,25 +793,49 @@
                 "value": {
                   "mode": "absolute",
                   "steps": [
-                    { "color": "red", "value": null },
-                    { "color": "green", "value": 0 }
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 0
+                    }
                   ]
                 }
               }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "entry_price" },
+            "matcher": {
+              "id": "byName",
+              "options": "entry_price"
+            },
             "properties": [
-              { "id": "unit", "value": "currencyUSD" },
-              { "id": "decimals", "value": 4 }
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "exit_price" },
+            "matcher": {
+              "id": "byName",
+              "options": "exit_price"
+            },
             "properties": [
-              { "id": "unit", "value": "currencyUSD" },
-              { "id": "decimals", "value": 4 }
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              }
             ]
           }
         ]
@@ -625,7 +845,8 @@
           "refId": "A",
           "rawQueryText": "SELECT symbol, side, entry_price, exit_price, quantity, ROUND(pnl, 2) AS pnl, entry_time, exit_time FROM paper_trades WHERE status='CLOSED' ORDER BY pnl DESC LIMIT 10",
           "queryType": "table",
-          "timeColumns": []
+          "timeColumns": [],
+          "queryText": "SELECT symbol, side, entry_price, exit_price, quantity, ROUND(pnl, 2) AS pnl, entry_time, exit_time FROM paper_trades WHERE status='CLOSED' ORDER BY pnl DESC LIMIT 10"
         }
       ]
     },
@@ -638,11 +859,18 @@
         "type": "frser-sqlite-datasource",
         "uid": "sqlite-cryptobot"
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
       "options": {
         "footer": {
           "show": false,
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "fields": "",
           "enablePagination": false
         },
@@ -657,7 +885,10 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null }
+              {
+                "color": "green",
+                "value": null
+              }
             ]
           },
           "mappings": [],
@@ -669,10 +900,19 @@
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "pnl" },
+            "matcher": {
+              "id": "byName",
+              "options": "pnl"
+            },
             "properties": [
-              { "id": "unit", "value": "currencyUSD" },
-              { "id": "decimals", "value": 2 },
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              },
               {
                 "id": "custom.displayMode",
                 "value": "color-background"
@@ -682,25 +922,49 @@
                 "value": {
                   "mode": "absolute",
                   "steps": [
-                    { "color": "red", "value": null },
-                    { "color": "green", "value": 0 }
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 0
+                    }
                   ]
                 }
               }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "entry_price" },
+            "matcher": {
+              "id": "byName",
+              "options": "entry_price"
+            },
             "properties": [
-              { "id": "unit", "value": "currencyUSD" },
-              { "id": "decimals", "value": 4 }
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "exit_price" },
+            "matcher": {
+              "id": "byName",
+              "options": "exit_price"
+            },
             "properties": [
-              { "id": "unit", "value": "currencyUSD" },
-              { "id": "decimals", "value": 4 }
+              {
+                "id": "unit",
+                "value": "currencyUSD"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              }
             ]
           }
         ]
@@ -710,7 +974,8 @@
           "refId": "A",
           "rawQueryText": "SELECT symbol, side, entry_price, exit_price, quantity, ROUND(pnl, 2) AS pnl, entry_time, exit_time FROM paper_trades WHERE status='CLOSED' ORDER BY pnl ASC LIMIT 10",
           "queryType": "table",
-          "timeColumns": []
+          "timeColumns": [],
+          "queryText": "SELECT symbol, side, entry_price, exit_price, quantity, ROUND(pnl, 2) AS pnl, entry_time, exit_time FROM paper_trades WHERE status='CLOSED' ORDER BY pnl ASC LIMIT 10"
         }
       ]
     }
@@ -722,7 +987,10 @@
     "list": [
       {
         "builtIn": 1,
-        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
         "enable": true,
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
