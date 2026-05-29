@@ -69,10 +69,10 @@ jobs:
           PY
           echo
           echo "=== curl signals API from inside docker ==="
-          docker compose exec -T api curl -s 'http://localhost:8000/signals?symbol=ADA/USDT&timeframe=1d&limit=3&exchange=binance' | python3 -m json.tool | head -40 || true
+          docker compose exec -T api curl -s 'http://localhost:8000/signals?symbol=ADA/USDT&timeframe=1d&limit=10&exchange=binance' | python3 -c "import sys,json; d=json.load(sys.stdin); print('items:',len(d) if isinstance(d,list) else d); [print('  ',r['timestamp'],r['close']) for r in (d if isinstance(d,list) else [])]" || true
           echo
           echo "=== frontend container test ==="
-          docker compose exec -T frontend curl -s 'http://api:8000/signals?symbol=ADA/USDT&timeframe=1d&limit=3&exchange=binance' | python3 -m json.tool | head -40 || true
+          docker compose exec -T frontend curl -s 'http://api:8000/signals?symbol=ADA/USDT&timeframe=1d&limit=10&exchange=binance' | python3 -c "import sys,json; d=json.load(sys.stdin); print('items:',len(d) if isinstance(d,list) else d); [print('  ',r['timestamp'],r['close']) for r in (d if isinstance(d,list) else [])]" || true
           echo
           echo "=== docker images SHA + restart times ==="
           docker compose ps --format 'table {{.Name}}\t{{.Image}}\t{{.RunningFor}}\t{{.Status}}'
