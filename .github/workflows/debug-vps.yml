@@ -24,27 +24,22 @@ jobs:
           echo "VPS_HOST_CLEAN=$VPS_HOST" >> $GITHUB_ENV
           ssh-keyscan -T 30 -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Write detect script and run inside api container
+      - name: Re-check DB state (BTC 1h count + first hours of May 11-12 gap)
         run: |
-          cat > /tmp/detect_gaps.py <<'PYEOF'
-          import json, sys
-          from datetime import datetime
-          with open("/tmp/sig.json") as f:
-              d = json.load(f)
-          print(f"total: {len(d)}")
-          print(f"first: {d[0]['timestamp']}")
-          print(f"last:  {d[-1]['timestamp']}")
-          prev = None
-          gaps = 0
-          for r in d:
-              t = datetime.fromisoformat(r['timestamp'])
-              if prev:
-                  delta = (t - prev).total_seconds() / 3600
-                  if delta > 1.5:
-                      print(f"  GAP after {prev}: {delta:.1f}h missing")
-                      gaps += 1
-              prev = t
-          print(f"total gaps > 1.5h: {gaps}")
+          cat > /tmp/check.py <<'PYEOF'
+          import sqlite3
+          con = sqlite3.connect("/app/data/processed/crypto_data.db")
+          # check actual count and date range
+          r = con.execute("SELECT COUNT(*), MIN(timestamp), MAX(timestamp) FROM ohlcv WHERE symbol='BTC/USDT' AND timeframe='1h' AND exchange='binance'").fetchone()
+          print(f"BTC 1h binance count: {r[0]}, min: {r[1]}, max: {r[2]}")
+          # check May 10-26 gap
+          print("=== BTC 1h binance count per day May 10-26 ===")
+          for d, n in con.execute("SELECT DATE(timestamp), COUNT(*) FROM ohlcv WHERE symbol='BTC/USDT' AND timeframe='1h' AND exchange='binance' AND timestamp >= '2026-05-10' AND timestamp <= '2026-05-26' GROUP BY DATE(timestamp) ORDER BY DATE(timestamp)").fetchall():
+              print(f"  {d}  n={n}")
+          # check distinct exchange values for ADA 1h (uppercase/lowercase variants?)
+          print("=== Distinct (symbol, timeframe, exchange) for BTC 1h ===")
+          for row in con.execute("SELECT DISTINCT symbol, timeframe, exchange FROM ohlcv WHERE symbol LIKE '%BTC%USDT%' AND timeframe='1h'").fetchall():
+              print(f"  {row}")
           PYEOF
-          scp -o StrictHostKeyChecking=no /tmp/detect_gaps.py ubuntu@$VPS_HOST_CLEAN:/tmp/detect_gaps.py
-          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'docker cp /tmp/detect_gaps.py cryptobot-api-1:/tmp/detect_gaps.py && cd ~/cryptobot && docker compose exec -T api bash -c "curl -s '"'"'http://localhost:8000/signals?symbol=BTC/USDT&timeframe=1h&limit=200&exchange=binance'"'"' > /tmp/sig.json && python3 /tmp/detect_gaps.py"'
+          scp -o StrictHostKeyChecking=no /tmp/check.py ubuntu@$VPS_HOST_CLEAN:/tmp/check.py
+          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'docker cp /tmp/check.py cryptobot-api-1:/tmp/check.py && docker compose -f ~/cryptobot/docker-compose.yml exec -T api python3 /tmp/check.py'
