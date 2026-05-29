@@ -102,10 +102,14 @@
         mode: "0644"
       notify: Reload nginx
 
-    - name: Ensure apache2-utils installed (for htpasswd)
+    - name: Ensure apache2-utils + passlib installed (for htpasswd module)
       apt:
-        name: apache2-utils
+        name:
+          - apache2-utils
+          - python3-passlib
+          - python3-bcrypt
         state: present
+        update_cache: true
 
     - name: Create htpasswd for observability endpoints
       community.general.htpasswd:
