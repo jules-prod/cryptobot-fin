@@ -159,6 +159,7 @@ services:
       - "3000:3000"
     volumes:
       - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
       - ./data:/app/data:ro
       - grafana-data:/var/lib/grafana
     depends_on:
