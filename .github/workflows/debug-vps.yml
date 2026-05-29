@@ -24,67 +24,24 @@ jobs:
           echo "VPS_HOST_CLEAN=$VPS_HOST" >> $GITHUB_ENV
           ssh-keyscan -T 30 -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: OHLCV freshness per (symbol, timeframe)
+      - name: Diag
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN bash -s <<'REMOTE'
           set -e
           cd ~/cryptobot
-          echo "=== docker compose ps ==="
-          docker compose ps
+          echo "=== deployed dashboard.py (lines 115-135) ==="
+          docker compose exec -T frontend sed -n '115,135p' /app/frontend/pages/1_dashboard.py || true
           echo
-          echo "=== OHLCV max(timestamp) per (symbol, timeframe) ==="
-          docker compose exec -T api python - <<'PY'
-          import sqlite3, os
-          db = '/app/data/processed/crypto_data.db'
-          if not os.path.exists(db):
-              print(f"DB MISSING: {db}")
-              raise SystemExit
-          con = sqlite3.connect(db)
-          rows = con.execute("""
-              SELECT symbol, timeframe,
-                     MAX(timestamp) AS max_ts,
-                     MIN(timestamp) AS min_ts,
-                     COUNT(*) AS n
-              FROM ohlcv
-              GROUP BY symbol, timeframe
-              ORDER BY symbol, timeframe
-          """).fetchall()
-          for s, tf, mx, mn, n in rows:
-              print(f"{s:12s} {tf:4s}  n={n:6d}  min={mn}  max={mx}")
-          # Repro de la query API signals ADA/USDT 1d binance
-          q = con.execute("""
-              SELECT timestamp, exchange FROM ohlcv
-              WHERE symbol='ADA/USDT' AND timeframe='1d' AND exchange='binance'
-              ORDER BY timestamp DESC LIMIT 5
-          """).fetchall()
-          print('--- ADA/USDT 1d binance (top 5 by ts desc) ---')
-          for ts, ex in q:
-              print(f'  {ts}  {ex}')
-          q2 = con.execute("""
-              SELECT DISTINCT exchange FROM ohlcv WHERE symbol='ADA/USDT' AND timeframe='1d'
-          """).fetchall()
-          print('--- Distinct exchanges for ADA/USDT 1d ---')
-          for (ex,) in q2:
-              print(f'  {ex}')
-          PY
+          echo "=== git rev on disk ==="
+          git -C ~/cryptobot log --oneline -3 2>/dev/null || ls ~/cryptobot
           echo
-          echo "=== curl signals API from inside docker ==="
+          echo "=== api curl signals ==="
           docker compose exec -T api curl -s 'http://localhost:8000/signals?symbol=ADA/USDT&timeframe=1d&limit=10&exchange=binance' | python3 -c "import sys,json; d=json.load(sys.stdin); print('items:',len(d) if isinstance(d,list) else d); [print('  ',r['timestamp'],r['close']) for r in (d if isinstance(d,list) else [])]" || true
           echo
-          echo "=== frontend container test ==="
-          docker compose exec -T frontend curl -s 'http://api:8000/signals?symbol=ADA/USDT&timeframe=1d&limit=10&exchange=binance' | python3 -c "import sys,json; d=json.load(sys.stdin); print('items:',len(d) if isinstance(d,list) else d); [print('  ',r['timestamp'],r['close']) for r in (d if isinstance(d,list) else [])]" || true
-          echo
-          echo "=== docker images SHA + restart times ==="
-          docker compose ps --format 'table {{.Name}}\t{{.Image}}\t{{.RunningFor}}\t{{.Status}}'
-          echo
-          echo "=== Restart frontend container (clear Streamlit cache) ==="
-          docker compose restart frontend
-          sleep 3
+          echo "=== Stop frontend, prune cache, restart ==="
+          docker compose stop frontend
+          docker compose rm -f frontend
+          docker compose up -d frontend
+          sleep 4
           docker compose ps frontend
-          echo
-          echo "=== Collector logs (last 80 lines) ==="
-          docker compose logs --tail=150 collector || true
-          echo
-          echo "=== API logs (last 60 lines) ==="
-          docker compose logs --tail=60 api || true
           REMOTE
