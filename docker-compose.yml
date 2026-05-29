@@ -169,6 +169,7 @@ services:
       GF_SMTP_FROM_NAME: "CryptoBot Grafana"
       GF_SMTP_SKIP_VERIFY: "false"
       ALERT_EMAIL_TO: ${ALERT_EMAIL_TO}
+      GF_INSTALL_PLUGINS: "frser-sqlite-datasource,yesoreyeram-infinity-datasource"
     ports:
       - "3000:3000"
     volumes:
