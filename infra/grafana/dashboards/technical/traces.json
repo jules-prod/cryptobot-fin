@@ -116,7 +116,7 @@
             "uid": "tempo"
           },
           "queryType": "traceql",
-          "query": "{.service.name=\"$service\"}",
+          "query": "{resource.service.name=\"$service\"}",
           "refId": "A",
           "limit": 20
         }
@@ -227,5 +227,5 @@
   "timepicker": {},
   "title": "Traces",
   "uid": "cryptobot-traces",
-  "version": 6
+  "version": 7
 }
