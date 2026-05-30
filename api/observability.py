@@ -90,7 +90,17 @@ def _setup_structlog() -> None:
 def _setup_prometheus(app: "FastAPI") -> None:
     """Expose /metrics via prometheus-fastapi-instrumentator."""
     try:
+        from prometheus_client import REGISTRY
         from prometheus_fastapi_instrumentator import Instrumentator
+
+        # Idempotency for test suites: if a previous setup_observability call
+        # (e.g. via api.main import) already registered the inprogress gauge
+        # in the global REGISTRY, drop it before re-instrumenting to avoid
+        # "Duplicated timeseries" ValueError on the second registration.
+        for collector in list(REGISTRY._names_to_collectors.values()):
+            if getattr(collector, "_name", None) == "http_requests_inprogress":
+                REGISTRY.unregister(collector)
+                break
 
         Instrumentator(
             should_group_status_codes=True,
