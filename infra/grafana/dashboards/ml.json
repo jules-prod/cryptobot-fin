@@ -31,7 +31,13 @@
             "method": "POST",
             "data": "{\"experiment_ids\":[\"0\"],\"max_results\":50,\"order_by\":[\"start_time DESC\"]}",
             "body_type": "raw",
-            "body_content_type": "application/json"
+            "body_content_type": "application/json",
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
           },
           "root_selector": "runs",
           "columns": [],
@@ -86,7 +92,13 @@
             "method": "POST",
             "data": "{\"experiment_ids\":[\"0\"],\"max_results\":20,\"order_by\":[\"start_time DESC\"]}",
             "body_type": "raw",
-            "body_content_type": "application/json"
+            "body_content_type": "application/json",
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
           },
           "root_selector": "runs",
           "columns": [
@@ -193,7 +205,13 @@
             "method": "POST",
             "data": "{\"experiment_ids\":[\"0\"],\"max_results\":50,\"order_by\":[\"start_time DESC\"]}",
             "body_type": "raw",
-            "body_content_type": "application/json"
+            "body_content_type": "application/json",
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
           },
           "root_selector": "runs",
           "columns": [
@@ -243,7 +261,13 @@
             "method": "POST",
             "data": "{\"experiment_ids\":[\"0\"],\"max_results\":50,\"order_by\":[\"start_time DESC\"]}",
             "body_type": "raw",
-            "body_content_type": "application/json"
+            "body_content_type": "application/json",
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
           },
           "root_selector": "runs",
           "columns": [
@@ -293,7 +317,13 @@
             "method": "POST",
             "data": "{\"experiment_ids\":[\"0\"],\"max_results\":50,\"order_by\":[\"metrics.sharpe DESC\"]}",
             "body_type": "raw",
-            "body_content_type": "application/json"
+            "body_content_type": "application/json",
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
           },
           "root_selector": "runs",
           "columns": [
