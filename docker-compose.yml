@@ -88,6 +88,8 @@ services:
     volumes:
       - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - crypto-net
 
@@ -140,12 +142,10 @@ services:
   nginx-exporter:
     image: nginx/nginx-prometheus-exporter:1.4
     restart: unless-stopped
+    network_mode: host
     command:
-      - --nginx.scrape-uri=http://host.docker.internal:8080/nginx_status
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    networks:
-      - crypto-net
+      - --nginx.scrape-uri=http://127.0.0.1:8080/nginx_status
+      - --web.listen-address=:9113
 
   grafana:
     build:

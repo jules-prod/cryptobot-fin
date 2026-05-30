@@ -154,6 +154,14 @@
         proto: tcp
         comment: Allow docker containers to scrape nginx_status
 
+    - name: Allow docker bridge to nginx-exporter port 9113
+      community.general.ufw:
+        rule: allow
+        from_ip: 172.16.0.0/12
+        to_port: '9113'
+        proto: tcp
+        comment: Allow Prometheus to scrape nginx-exporter on host net
+
     - name: Create htpasswd for observability endpoints
       community.general.htpasswd:
         path: /etc/nginx/.htpasswd-observability
