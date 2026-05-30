@@ -43,7 +43,7 @@
           "filters": [],
           "format": "table",
           "parser": "uql",
-          "uql": "parse-json\n| scope \"runs\"\n| project\n    \"run_id\"=\"info.run_id\",\n    \"run_name\"=\"info.run_name\",\n    \"status\"=\"info.status\",\n    \"start_time\"=\"info.start_time\",\n    \"sharpe\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='sharpe' | project \"value\" | first),\n    \"profit_factor\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='profit_factor' | project \"value\" | first),\n    \"max_drawdown\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='max_drawdown' | project \"value\" | first),\n    \"accuracy\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='accuracy' | project \"value\" | first),\n    \"win_rate\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='win_rate' | project \"value\" | first),\n    \"total_pnl\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='total_pnl' | project \"value\" | first)"
+          "uql": "parse-json\n| scope \"runs\"\n| project \"run_id\"=\"info.run_id\", \"run_name\"=\"info.run_name\", \"status\"=\"info.status\", \"start_time\"=\"info.start_time\""
         }
       ],
       "transformations": [
@@ -99,7 +99,7 @@
           "filters": [],
           "format": "table",
           "parser": "uql",
-          "uql": "parse-json\n| scope \"runs\"\n| project\n    \"run_id\"=\"info.run_id\",\n    \"run_name\"=\"info.run_name\",\n    \"status\"=\"info.status\",\n    \"start_time\"=\"info.start_time\",\n    \"sharpe\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='sharpe' | project \"value\" | first),\n    \"profit_factor\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='profit_factor' | project \"value\" | first),\n    \"max_drawdown\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='max_drawdown' | project \"value\" | first),\n    \"accuracy\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='accuracy' | project \"value\" | first),\n    \"win_rate\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='win_rate' | project \"value\" | first),\n    \"total_pnl\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='total_pnl' | project \"value\" | first)"
+          "uql": "parse-json\n| scope \"runs\"\n| project \"run_id\"=\"info.run_id\", \"run_name\"=\"info.run_name\", \"status\"=\"info.status\", \"start_time\"=\"info.start_time\""
         }
       ],
       "fieldConfig": {
@@ -182,7 +182,7 @@
           "filters": [],
           "format": "timeseries",
           "parser": "uql",
-          "uql": "parse-json\n| scope \"runs\"\n| project\n    \"run_id\"=\"info.run_id\",\n    \"run_name\"=\"info.run_name\",\n    \"status\"=\"info.status\",\n    \"start_time\"=\"info.start_time\",\n    \"sharpe\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='sharpe' | project \"value\" | first),\n    \"profit_factor\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='profit_factor' | project \"value\" | first),\n    \"max_drawdown\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='max_drawdown' | project \"value\" | first),\n    \"accuracy\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='accuracy' | project \"value\" | first),\n    \"win_rate\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='win_rate' | project \"value\" | first),\n    \"total_pnl\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='total_pnl' | project \"value\" | first)"
+          "uql": "parse-json\n| scope \"runs\"\n| project \"run_id\"=\"info.run_id\", \"run_name\"=\"info.run_name\", \"status\"=\"info.status\", \"start_time\"=\"info.start_time\""
         }
       ],
       "fieldConfig": {
@@ -228,7 +228,7 @@
           "filters": [],
           "format": "timeseries",
           "parser": "uql",
-          "uql": "parse-json\n| scope \"runs\"\n| project\n    \"run_id\"=\"info.run_id\",\n    \"run_name\"=\"info.run_name\",\n    \"status\"=\"info.status\",\n    \"start_time\"=\"info.start_time\",\n    \"sharpe\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='sharpe' | project \"value\" | first),\n    \"profit_factor\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='profit_factor' | project \"value\" | first),\n    \"max_drawdown\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='max_drawdown' | project \"value\" | first),\n    \"accuracy\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='accuracy' | project \"value\" | first),\n    \"win_rate\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='win_rate' | project \"value\" | first),\n    \"total_pnl\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='total_pnl' | project \"value\" | first)"
+          "uql": "parse-json\n| scope \"runs\"\n| project \"run_id\"=\"info.run_id\", \"run_name\"=\"info.run_name\", \"status\"=\"info.status\", \"start_time\"=\"info.start_time\""
         }
       ],
       "fieldConfig": {
@@ -274,7 +274,7 @@
           "filters": [],
           "format": "table",
           "parser": "uql",
-          "uql": "parse-json\n| scope \"runs\"\n| project\n    \"run_id\"=\"info.run_id\",\n    \"run_name\"=\"info.run_name\",\n    \"status\"=\"info.status\",\n    \"start_time\"=\"info.start_time\",\n    \"sharpe\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='sharpe' | project \"value\" | first),\n    \"profit_factor\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='profit_factor' | project \"value\" | first),\n    \"max_drawdown\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='max_drawdown' | project \"value\" | first),\n    \"accuracy\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='accuracy' | project \"value\" | first),\n    \"win_rate\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='win_rate' | project \"value\" | first),\n    \"total_pnl\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='total_pnl' | project \"value\" | first)"
+          "uql": "parse-json\n| scope \"runs\"\n| project \"run_id\"=\"info.run_id\", \"run_name\"=\"info.run_name\", \"status\"=\"info.status\", \"start_time\"=\"info.start_time\""
         }
       ],
       "transformations": [
@@ -318,5 +318,5 @@
   },
   "title": "Machine Learning",
   "uid": "cryptobot-ml",
-  "version": 100
+  "version": 101
 }
