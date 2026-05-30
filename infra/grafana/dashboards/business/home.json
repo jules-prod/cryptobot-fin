@@ -63,13 +63,14 @@
       },
       "targets": [
         {
-          "expr": "100 * sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m]))",
+          "expr": "(100 * sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m]))) or vector(0)",
           "legendFormat": "Error %"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
+          "noValue": "0",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -392,13 +393,18 @@
         "y": 11
       },
       "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
+        "type": "frser-sqlite-datasource",
+        "uid": "sqlite"
       },
       "targets": [
         {
-          "expr": "sum(paper_trades_total)",
-          "legendFormat": "trades"
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "sqlite"
+          },
+          "rawQueryText": "SELECT COUNT(*) AS value FROM paper_trades",
+          "queryText": "SELECT COUNT(*) AS value FROM paper_trades",
+          "refId": "A"
         }
       ],
       "fieldConfig": {
@@ -500,5 +506,6 @@
     "to": "now"
   },
   "title": "Home",
-  "uid": "cryptobot-home"
+  "uid": "cryptobot-home",
+  "version": 2
 }

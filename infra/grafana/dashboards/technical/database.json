@@ -127,13 +127,13 @@
       "title": "Signals Computed Last 24h",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 16 },
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
-          "rawQueryText": "SELECT 'N/A' AS value",
-          "refId": "A",
-          "queryText": "SELECT 'N/A' AS value"
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(increase(signals_computed_total[24h]))",
+          "legendFormat": "signals",
+          "refId": "A"
         }
       ],
       "fieldConfig": {
@@ -195,5 +195,5 @@
   "timepicker": {},
   "title": "Database",
   "uid": "cryptobot-database",
-  "version": 1
+  "version": 2
 }

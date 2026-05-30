@@ -135,7 +135,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m])) * 100",
+          "expr": "(sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m])) * 100) or vector(0)",
           "legendFormat": "5xx error rate",
           "refId": "A"
         },
@@ -144,7 +144,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(rate(http_requests_total{status=~\"4..\"}[5m])) / sum(rate(http_requests_total[5m])) * 100",
+          "expr": "(sum(rate(http_requests_total{status=~\"4..\"}[5m])) / sum(rate(http_requests_total[5m])) * 100) or vector(0)",
           "legendFormat": "4xx error rate",
           "refId": "B"
         }
@@ -152,6 +152,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
+          "noValue": "0",
           "min": 0,
           "max": 100,
           "thresholds": {
@@ -318,5 +319,5 @@
   "timepicker": {},
   "title": "API Overview",
   "uid": "cryptobot-api-overview",
-  "version": 1
+  "version": 2
 }
