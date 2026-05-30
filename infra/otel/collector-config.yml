@@ -23,6 +23,11 @@ connectors:
       - name: http.status_code
         default: '200'
     metrics_flush_interval: 15s
+  servicegraph:
+    metrics_flush_interval: 15s
+    store:
+      ttl: 2s
+      max_items: 1000
 
 exporters:
   prometheus:
@@ -48,9 +53,9 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp/tempo, spanmetrics]
+      exporters: [otlp/tempo, spanmetrics, servicegraph]
     metrics:
-      receivers: [otlp, spanmetrics]
+      receivers: [otlp, spanmetrics, servicegraph]
       processors: [batch]
       exporters: [prometheus]
     logs:
