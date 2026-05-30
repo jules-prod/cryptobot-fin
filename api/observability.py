@@ -90,15 +90,16 @@ def _setup_structlog() -> None:
 def _setup_prometheus(app: "FastAPI") -> None:
     """Expose /metrics via prometheus-fastapi-instrumentator."""
     try:
-        from prometheus_fastapi_instrumentator import Instrumentator, metrics
+        from prometheus_fastapi_instrumentator import Instrumentator
 
-        inst = Instrumentator(
+        Instrumentator(
             should_group_status_codes=True,
             should_ignore_untemplated=True,
             should_respect_env_var=False,
-        )
-        inst.add(metrics.requests_inprogress(metric_name="http_requests_inprogress"))
-        inst.instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
+            should_instrument_requests_inprogress=True,
+            inprogress_name="http_requests_inprogress",
+            inprogress_labels=True,
+        ).instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
     except Exception as exc:  # pragma: no cover - defensive
         logger.warning("prometheus instrumentator setup failed: %s", exc)
 
