@@ -146,6 +146,14 @@
         state: present
         update_cache: true
 
+    - name: Allow docker bridge to nginx stub_status port 8080
+      community.general.ufw:
+        rule: allow
+        from_ip: 172.16.0.0/12
+        to_port: '8080'
+        proto: tcp
+        comment: Allow docker containers to scrape nginx_status
+
     - name: Create htpasswd for observability endpoints
       community.general.htpasswd:
         path: /etc/nginx/.htpasswd-observability
