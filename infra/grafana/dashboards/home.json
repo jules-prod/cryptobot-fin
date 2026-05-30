@@ -17,7 +17,7 @@
       "type": "stat",
       "id": 2,
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum(rate(http_requests_total[5m]))",
@@ -34,7 +34,7 @@
       "type": "stat",
       "id": 3,
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "100 * sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m]))",
@@ -62,7 +62,7 @@
       "type": "stat",
       "id": 4,
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
@@ -79,7 +79,7 @@
       "type": "stat",
       "id": 5,
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum(http_requests_inprogress)",
@@ -103,7 +103,7 @@
       "type": "stat",
       "id": 7,
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 6 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum(increase(candles_ingested_total[24h]))",
@@ -120,7 +120,7 @@
       "type": "stat",
       "id": 8,
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 6 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum(increase(signals_computed_total[24h]))",
@@ -137,7 +137,7 @@
       "type": "stat",
       "id": 9,
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 6 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum(increase(news_collected_total[24h]))",
@@ -154,7 +154,7 @@
       "type": "stat",
       "id": 10,
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 6 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum(increase(etl_duration_seconds_count[24h]))",
@@ -178,7 +178,7 @@
       "type": "stat",
       "id": 12,
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 11 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "paper_balance_usd",
@@ -195,7 +195,7 @@
       "type": "stat",
       "id": 13,
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 11 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "paper_pnl_total",
@@ -222,7 +222,7 @@
       "type": "gauge",
       "id": 14,
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 11 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "paper_win_ratio * 100",
@@ -243,7 +243,7 @@
       "type": "stat",
       "id": 15,
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 11 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum(paper_trades_total)",
@@ -290,7 +290,7 @@
       "type": "timeseries",
       "id": 18,
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 24 },
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "expr": "sum(rate(candles_ingested_total[5m]))",
