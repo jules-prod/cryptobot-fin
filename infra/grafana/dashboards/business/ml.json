@@ -95,11 +95,18 @@
               }
             ]
           },
-          "root_selector": "",
+          "root_selector": "runs",
           "filters": [],
           "format": "table",
-          "parser": "uql",
-          "uql": "parse-json\n| scope \"runs\"\n| project \"run_id\"=\"info.run_id\", \"run_name\"=\"info.run_name\", \"status\"=\"info.status\", \"start_time\"=\"info.start_time\""
+          "parser": "backend",
+          "columns": [
+            { "selector": "info.run_id", "text": "run_id", "type": "string" },
+            { "selector": "info.run_name", "text": "run_name", "type": "string" },
+            { "selector": "info.status", "text": "status", "type": "string" },
+            { "selector": "info.start_time", "text": "start_time", "type": "timestamp_epoch" },
+            { "selector": "data.metrics[?(@.key=='sharpe')].value", "text": "sharpe", "type": "number" },
+            { "selector": "data.metrics[?(@.key=='profit_factor')].value", "text": "profit_factor", "type": "number" }
+          ]
         }
       ],
       "fieldConfig": {
@@ -178,11 +185,17 @@
               }
             ]
           },
-          "root_selector": "",
+          "root_selector": "runs",
           "filters": [],
           "format": "timeseries",
-          "parser": "uql",
-          "uql": "parse-json\n| scope \"runs\"\n| project \"run_id\"=\"info.run_id\", \"run_name\"=\"info.run_name\", \"status\"=\"info.status\", \"start_time\"=\"info.start_time\""
+          "parser": "backend",
+          "columns": [
+            { "selector": "info.run_id", "text": "run_id", "type": "string" },
+            { "selector": "info.run_name", "text": "run_name", "type": "string" },
+            { "selector": "info.status", "text": "status", "type": "string" },
+            { "selector": "info.start_time", "text": "start_time", "type": "timestamp_epoch" },
+            { "selector": "data.metrics[?(@.key=='sharpe')].value", "text": "sharpe", "type": "number" }
+          ]
         }
       ],
       "fieldConfig": {
@@ -224,11 +237,17 @@
               }
             ]
           },
-          "root_selector": "",
+          "root_selector": "runs",
           "filters": [],
           "format": "timeseries",
-          "parser": "uql",
-          "uql": "parse-json\n| scope \"runs\"\n| project \"run_id\"=\"info.run_id\", \"run_name\"=\"info.run_name\", \"status\"=\"info.status\", \"start_time\"=\"info.start_time\""
+          "parser": "backend",
+          "columns": [
+            { "selector": "info.run_id", "text": "run_id", "type": "string" },
+            { "selector": "info.run_name", "text": "run_name", "type": "string" },
+            { "selector": "info.status", "text": "status", "type": "string" },
+            { "selector": "info.start_time", "text": "start_time", "type": "timestamp_epoch" },
+            { "selector": "data.metrics[?(@.key=='profit_factor')].value", "text": "profit_factor", "type": "number" }
+          ]
         }
       ],
       "fieldConfig": {
@@ -270,11 +289,14 @@
               }
             ]
           },
-          "root_selector": "",
+          "root_selector": "runs",
           "filters": [],
           "format": "table",
-          "parser": "uql",
-          "uql": "parse-json\n| scope \"runs\"\n| project \"run_id\"=\"info.run_id\", \"run_name\"=\"info.run_name\", \"status\"=\"info.status\", \"start_time\"=\"info.start_time\""
+          "parser": "backend",
+          "columns": [
+            { "selector": "info.run_name", "text": "run_name", "type": "string" },
+            { "selector": "data.metrics[?(@.key=='sharpe')].value", "text": "sharpe", "type": "number" }
+          ]
         }
       ],
       "transformations": [
@@ -318,5 +340,5 @@
   },
   "title": "Machine Learning",
   "uid": "cryptobot-ml",
-  "version": 101
+  "version": 102
 }
