@@ -115,20 +115,20 @@
             {
               "selector": "info.start_time",
               "text": "start_time",
-              "type": "timestamp_epoch_s"
+              "type": "timestamp_epoch_ms"
             },
             {
-              "selector": "data.metrics[?(@.key=='sharpe')].value",
+              "selector": "$.data.metrics[?(@.key=='sharpe')].value[0]",
               "text": "sharpe",
               "type": "number"
             },
             {
-              "selector": "data.metrics[?(@.key=='profit_factor')].value",
+              "selector": "$.data.metrics[?(@.key=='profit_factor')].value[0]",
               "text": "profit_factor",
               "type": "number"
             },
             {
-              "selector": "data.metrics[?(@.key=='max_drawdown')].value",
+              "selector": "$.data.metrics[?(@.key=='max_drawdown')].value[0]",
               "text": "max_drawdown",
               "type": "number"
             }
@@ -218,10 +218,10 @@
             {
               "selector": "info.start_time",
               "text": "start_time",
-              "type": "timestamp_epoch_s"
+              "type": "timestamp_epoch_ms"
             },
             {
-              "selector": "data.metrics[?(@.key=='sharpe')].value",
+              "selector": "$.data.metrics[?(@.key=='sharpe')].value[0]",
               "text": "sharpe",
               "type": "number"
             }
@@ -274,10 +274,10 @@
             {
               "selector": "info.start_time",
               "text": "start_time",
-              "type": "timestamp_epoch_s"
+              "type": "timestamp_epoch_ms"
             },
             {
-              "selector": "data.metrics[?(@.key=='profit_factor')].value",
+              "selector": "$.data.metrics[?(@.key=='profit_factor')].value[0]",
               "text": "profit_factor",
               "type": "number"
             }
@@ -333,7 +333,7 @@
               "type": "string"
             },
             {
-              "selector": "data.metrics[?(@.key=='sharpe')].value",
+              "selector": "$.data.metrics[?(@.key=='sharpe')].value[0]",
               "text": "sharpe",
               "type": "number"
             }
