@@ -10,10 +10,10 @@
       "title": "p95 Duration by Operation",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "histogram_quantile(0.95, sum(rate(traces_spanmetrics_duration_milliseconds_bucket{service=\"$service\"}[5m])) by (le, span_name))",
           "legendFormat": "{{span_name}}",
           "refId": "A"
@@ -30,10 +30,10 @@
       "title": "Trace Rate by Operation (req/s)",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "sum(rate(traces_spanmetrics_calls_total{service=\"$service\"}[5m])) by (span_name)",
           "legendFormat": "{{span_name}}",
           "refId": "A"
@@ -50,10 +50,10 @@
       "title": "Trace Search",
       "type": "traces",
       "gridPos": { "h": 12, "w": 24, "x": 0, "y": 8 },
-      "datasource": { "type": "tempo", "uid": "${DS_TEMPO}" },
+      "datasource": { "type": "tempo", "uid": "tempo" },
       "targets": [
         {
-          "datasource": { "type": "tempo", "uid": "${DS_TEMPO}" },
+          "datasource": { "type": "tempo", "uid": "tempo" },
           "queryType": "traceql",
           "query": "{.service.name=\"$service\"}",
           "refId": "A",
@@ -68,10 +68,10 @@
       "title": "Service Graph — api to dependencies",
       "type": "nodeGraph",
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 20 },
-      "datasource": { "type": "tempo", "uid": "${DS_TEMPO}" },
+      "datasource": { "type": "tempo", "uid": "tempo" },
       "targets": [
         {
-          "datasource": { "type": "tempo", "uid": "${DS_TEMPO}" },
+          "datasource": { "type": "tempo", "uid": "tempo" },
           "queryType": "serviceMap",
           "refId": "A"
         }
@@ -109,7 +109,7 @@
       },
       {
         "current": { "selected": true, "text": "api", "value": "api" },
-        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
         "definition": "label_values(traces_spanmetrics_calls_total, service)",
         "hide": 0,
         "includeAll": false,

@@ -2,7 +2,7 @@
   "__inputs": [
     {
       "name": "DS_SQLITE_CRYPTOBOT",
-      "label": "sqlite-cryptobot",
+      "label": "sqlite",
       "description": "",
       "type": "datasource",
       "pluginId": "frser-sqlite-datasource",
@@ -94,7 +94,7 @@
       "description": "Cash disponible du premier portfolio actif",
       "datasource": {
         "type": "frser-sqlite-datasource",
-        "uid": "sqlite-cryptobot"
+        "uid": "sqlite"
       },
       "gridPos": {
         "h": 4,
@@ -157,7 +157,7 @@
       "description": "Somme des PnL r\u00e9alis\u00e9s sur trades ferm\u00e9s",
       "datasource": {
         "type": "frser-sqlite-datasource",
-        "uid": "sqlite-cryptobot"
+        "uid": "sqlite"
       },
       "gridPos": {
         "h": 4,
@@ -224,7 +224,7 @@
       "description": "Pourcentage de trades gagnants (PnL > 0) parmi les trades ferm\u00e9s",
       "datasource": {
         "type": "frser-sqlite-datasource",
-        "uid": "sqlite-cryptobot"
+        "uid": "sqlite"
       },
       "gridPos": {
         "h": 4,
@@ -291,7 +291,7 @@
       "description": "Nombre total de trades (tous statuts)",
       "datasource": {
         "type": "frser-sqlite-datasource",
-        "uid": "sqlite-cryptobot"
+        "uid": "sqlite"
       },
       "gridPos": {
         "h": 4,
@@ -364,7 +364,7 @@
       "description": "PnL cumul\u00e9 au fil du temps sur les trades ferm\u00e9s",
       "datasource": {
         "type": "frser-sqlite-datasource",
-        "uid": "sqlite-cryptobot"
+        "uid": "sqlite"
       },
       "gridPos": {
         "h": 8,
@@ -433,7 +433,7 @@
       "description": "Nombre de trades ouverts par jour",
       "datasource": {
         "type": "frser-sqlite-datasource",
-        "uid": "sqlite-cryptobot"
+        "uid": "sqlite"
       },
       "gridPos": {
         "h": 8,
@@ -512,7 +512,7 @@
       "description": "PnL total r\u00e9alis\u00e9 par paire de trading",
       "datasource": {
         "type": "frser-sqlite-datasource",
-        "uid": "sqlite-cryptobot"
+        "uid": "sqlite"
       },
       "gridPos": {
         "h": 8,
@@ -578,7 +578,7 @@
       "description": "Win rate et PnL total par paire de trading",
       "datasource": {
         "type": "frser-sqlite-datasource",
-        "uid": "sqlite-cryptobot"
+        "uid": "sqlite"
       },
       "gridPos": {
         "h": 8,
@@ -728,7 +728,7 @@
       "description": "Les 10 meilleurs trades par PnL d\u00e9croissant",
       "datasource": {
         "type": "frser-sqlite-datasource",
-        "uid": "sqlite-cryptobot"
+        "uid": "sqlite"
       },
       "gridPos": {
         "h": 8,
@@ -857,7 +857,7 @@
       "description": "Les 10 pires trades par PnL croissant",
       "datasource": {
         "type": "frser-sqlite-datasource",
-        "uid": "sqlite-cryptobot"
+        "uid": "sqlite"
       },
       "gridPos": {
         "h": 8,
