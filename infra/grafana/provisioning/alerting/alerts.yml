@@ -2,7 +2,7 @@ apiVersion: 1
 groups:
   - orgId: 1
     name: cryptobot-critical
-    folder: cryptobot
+    folder: CryptoBot
     interval: 1m
     rules:
       - uid: alert-5xx-rate
