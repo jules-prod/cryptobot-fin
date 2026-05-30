@@ -39,16 +39,11 @@
               }
             ]
           },
-          "root_selector": "runs",
-          "columns": [],
+          "root_selector": "",
           "filters": [],
           "format": "table",
-          "computed_columns": [
-            {
-              "selector": "count(runs)",
-              "text": "total_runs"
-            }
-          ]
+          "parser": "uql",
+          "uql": "parse-json\n| scope \"runs\"\n| project\n    \"run_id\"=\"info.run_id\",\n    \"run_name\"=\"info.run_name\",\n    \"status\"=\"info.status\",\n    \"start_time\"=\"info.start_time\",\n    \"sharpe\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='sharpe' | project \"value\" | first),\n    \"profit_factor\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='profit_factor' | project \"value\" | first),\n    \"max_drawdown\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='max_drawdown' | project \"value\" | first),\n    \"accuracy\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='accuracy' | project \"value\" | first),\n    \"win_rate\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='win_rate' | project \"value\" | first),\n    \"total_pnl\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='total_pnl' | project \"value\" | first)"
         }
       ],
       "transformations": [
@@ -100,41 +95,11 @@
               }
             ]
           },
-          "root_selector": "runs",
-          "columns": [
-            {
-              "selector": "info.run_id",
-              "text": "run_id",
-              "type": "string"
-            },
-            {
-              "selector": "info.status",
-              "text": "status",
-              "type": "string"
-            },
-            {
-              "selector": "info.start_time",
-              "text": "start_time",
-              "type": "timestamp_epoch_ms"
-            },
-            {
-              "selector": "$.data.metrics[?(@.key=='sharpe')].value[0]",
-              "text": "sharpe",
-              "type": "number"
-            },
-            {
-              "selector": "$.data.metrics[?(@.key=='profit_factor')].value[0]",
-              "text": "profit_factor",
-              "type": "number"
-            },
-            {
-              "selector": "$.data.metrics[?(@.key=='max_drawdown')].value[0]",
-              "text": "max_drawdown",
-              "type": "number"
-            }
-          ],
+          "root_selector": "",
           "filters": [],
-          "format": "table"
+          "format": "table",
+          "parser": "uql",
+          "uql": "parse-json\n| scope \"runs\"\n| project\n    \"run_id\"=\"info.run_id\",\n    \"run_name\"=\"info.run_name\",\n    \"status\"=\"info.status\",\n    \"start_time\"=\"info.start_time\",\n    \"sharpe\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='sharpe' | project \"value\" | first),\n    \"profit_factor\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='profit_factor' | project \"value\" | first),\n    \"max_drawdown\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='max_drawdown' | project \"value\" | first),\n    \"accuracy\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='accuracy' | project \"value\" | first),\n    \"win_rate\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='win_rate' | project \"value\" | first),\n    \"total_pnl\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='total_pnl' | project \"value\" | first)"
         }
       ],
       "fieldConfig": {
@@ -213,21 +178,11 @@
               }
             ]
           },
-          "root_selector": "runs",
-          "columns": [
-            {
-              "selector": "info.start_time",
-              "text": "start_time",
-              "type": "timestamp_epoch_ms"
-            },
-            {
-              "selector": "$.data.metrics[?(@.key=='sharpe')].value[0]",
-              "text": "sharpe",
-              "type": "number"
-            }
-          ],
+          "root_selector": "",
           "filters": [],
-          "format": "timeseries"
+          "format": "timeseries",
+          "parser": "uql",
+          "uql": "parse-json\n| scope \"runs\"\n| project\n    \"run_id\"=\"info.run_id\",\n    \"run_name\"=\"info.run_name\",\n    \"status\"=\"info.status\",\n    \"start_time\"=\"info.start_time\",\n    \"sharpe\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='sharpe' | project \"value\" | first),\n    \"profit_factor\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='profit_factor' | project \"value\" | first),\n    \"max_drawdown\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='max_drawdown' | project \"value\" | first),\n    \"accuracy\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='accuracy' | project \"value\" | first),\n    \"win_rate\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='win_rate' | project \"value\" | first),\n    \"total_pnl\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='total_pnl' | project \"value\" | first)"
         }
       ],
       "fieldConfig": {
@@ -269,21 +224,11 @@
               }
             ]
           },
-          "root_selector": "runs",
-          "columns": [
-            {
-              "selector": "info.start_time",
-              "text": "start_time",
-              "type": "timestamp_epoch_ms"
-            },
-            {
-              "selector": "$.data.metrics[?(@.key=='profit_factor')].value[0]",
-              "text": "profit_factor",
-              "type": "number"
-            }
-          ],
+          "root_selector": "",
           "filters": [],
-          "format": "timeseries"
+          "format": "timeseries",
+          "parser": "uql",
+          "uql": "parse-json\n| scope \"runs\"\n| project\n    \"run_id\"=\"info.run_id\",\n    \"run_name\"=\"info.run_name\",\n    \"status\"=\"info.status\",\n    \"start_time\"=\"info.start_time\",\n    \"sharpe\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='sharpe' | project \"value\" | first),\n    \"profit_factor\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='profit_factor' | project \"value\" | first),\n    \"max_drawdown\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='max_drawdown' | project \"value\" | first),\n    \"accuracy\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='accuracy' | project \"value\" | first),\n    \"win_rate\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='win_rate' | project \"value\" | first),\n    \"total_pnl\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='total_pnl' | project \"value\" | first)"
         }
       ],
       "fieldConfig": {
@@ -325,21 +270,11 @@
               }
             ]
           },
-          "root_selector": "runs",
-          "columns": [
-            {
-              "selector": "info.run_id",
-              "text": "run_id",
-              "type": "string"
-            },
-            {
-              "selector": "$.data.metrics[?(@.key=='sharpe')].value[0]",
-              "text": "sharpe",
-              "type": "number"
-            }
-          ],
+          "root_selector": "",
           "filters": [],
-          "format": "table"
+          "format": "table",
+          "parser": "uql",
+          "uql": "parse-json\n| scope \"runs\"\n| project\n    \"run_id\"=\"info.run_id\",\n    \"run_name\"=\"info.run_name\",\n    \"status\"=\"info.status\",\n    \"start_time\"=\"info.start_time\",\n    \"sharpe\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='sharpe' | project \"value\" | first),\n    \"profit_factor\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='profit_factor' | project \"value\" | first),\n    \"max_drawdown\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='max_drawdown' | project \"value\" | first),\n    \"accuracy\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='accuracy' | project \"value\" | first),\n    \"win_rate\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='win_rate' | project \"value\" | first),\n    \"total_pnl\"=(strings(\"data.metrics\") | parse-json | scope @ | where \"key\"=='total_pnl' | project \"value\" | first)"
         }
       ],
       "transformations": [
