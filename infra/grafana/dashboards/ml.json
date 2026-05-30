@@ -317,5 +317,6 @@
     "to": "now"
   },
   "title": "Machine Learning",
-  "uid": "cryptobot-ml"
+  "uid": "cryptobot-ml",
+  "version": 100
 }
