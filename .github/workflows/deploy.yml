@@ -78,24 +78,36 @@ jobs:
         run: |
           ansible-playbook -i inventories/production.rendered.ini playbooks/deploy.yml -v
 
-      - name: Diagnose VPS on deploy failure
-        if: failure()
+      - name: Diagnose VPS post-deploy
+        if: always()
         env:
           VPS_HOST_RAW: ${{ secrets.VPS_HOST }}
         run: |
           VPS_HOST=$(printf '%s' "$VPS_HOST_RAW" | tr -d '\n\r\t ')
           ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST 'bash -s' <<"DIAG"
           set +e
-          echo "=== free -h ==="
-          free -h
-          echo "=== df -h ==="
-          df -h /
           echo "=== docker compose ps ==="
           cd /home/ubuntu/cryptobot && docker compose ps -a
-          echo "=== docker compose logs (last 50 lines per service) ==="
-          for svc in api frontend collector mlflow prometheus loki tempo otel-collector grafana; do
+          echo "=== nginx-exporter logs ==="
+          docker compose logs --tail=40 nginx-exporter 2>&1 | tail -50
+          echo "=== host nginx test ==="
+          sudo ss -tlnp | grep -E "8080|9113" || echo "no listeners"
+          echo "=== local curl to nginx stub_status ==="
+          curl -sS -o /dev/null -w "127.0.0.1:8080 HTTP=%{http_code}\n" http://127.0.0.1:8080/nginx_status
+          curl -sS http://127.0.0.1:8080/nginx_status 2>&1 | head -5
+          echo "=== local curl to nginx-exporter ==="
+          curl -sS -o /dev/null -w "127.0.0.1:9113 HTTP=%{http_code}\n" http://127.0.0.1:9113/metrics
+          curl -sS http://127.0.0.1:9113/metrics 2>&1 | grep -E "^nginx_(up|connections_active)" | head -5
+          echo "=== nginx -t ==="
+          sudo nginx -t 2>&1
+          echo "=== cryptobot.conf head ==="
+          sudo cat /etc/nginx/sites-enabled/cryptobot.conf 2>&1 | head -20
+          echo "=== ufw status ==="
+          sudo ufw status numbered | head -30
+          echo "=== other services (last 30 lines per) ==="
+          for svc in api frontend collector mlflow prometheus loki tempo otel-collector grafana promtail; do
             echo "--- $svc ---"
-            docker compose logs --tail=50 "$svc" 2>&1 | tail -60
+            docker compose logs --tail=30 "$svc" 2>&1 | tail -40
           done
           echo "=== last 30 lines of dmesg (OOM kills?) ==="
           sudo dmesg | tail -30
