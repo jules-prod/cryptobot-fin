@@ -92,6 +92,20 @@
         line: "ALERT_EMAIL_TO={{ alert_email_to }}"
         create: false
 
+    - name: Ensure MLFLOW_TRACKING_USERNAME in .env
+      lineinfile:
+        path: "{{ docker_compose_dir }}/.env"
+        regexp: '^MLFLOW_TRACKING_USERNAME='
+        line: "MLFLOW_TRACKING_USERNAME={{ mlflow_tracking_username }}"
+        create: false
+
+    - name: Ensure MLFLOW_TRACKING_PASSWORD in .env
+      lineinfile:
+        path: "{{ docker_compose_dir }}/.env"
+        regexp: '^MLFLOW_TRACKING_PASSWORD='
+        line: "MLFLOW_TRACKING_PASSWORD={{ mlflow_tracking_password }}"
+        create: false
+
     - name: Make deploy script executable
       file:
         path: "{{ docker_compose_dir }}/scripts/deploy.sh"
@@ -167,6 +181,16 @@
         path: /etc/nginx/.htpasswd-observability
         name: "{{ grafana_admin_user }}"
         password: "{{ grafana_admin_password }}"
+        crypt_scheme: bcrypt
+        mode: "0640"
+        owner: root
+        group: www-data
+
+    - name: Create htpasswd for MLflow endpoint
+      community.general.htpasswd:
+        path: /etc/nginx/.htpasswd-mlflow
+        name: "{{ mlflow_tracking_username }}"
+        password: "{{ mlflow_tracking_password }}"
         crypt_scheme: bcrypt
         mode: "0640"
         owner: root

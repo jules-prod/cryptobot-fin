@@ -4,14 +4,20 @@ services:
       context: .
       dockerfile: mlflow/Dockerfile
     restart: unless-stopped
+    env_file: .env
+    environment:
+      MLFLOW_TRACKING_USERNAME: ${MLFLOW_TRACKING_USERNAME}
+      MLFLOW_TRACKING_PASSWORD: ${MLFLOW_TRACKING_PASSWORD}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/mlflow/health"]
       interval: 30s
       timeout: 10s
       start_period: 30s
       retries: 5
+    # Bind localhost uniquement : MLflow n'est PAS exposé publiquement.
+    # Accès externe via nginx (/mlflow/, basic-auth) ; accès interne via crypto-net.
     ports:
-      - "5001:5000"
+      - "127.0.0.1:5001:5000"
     volumes:
       - mlflow-data:/mlflow
     networks:

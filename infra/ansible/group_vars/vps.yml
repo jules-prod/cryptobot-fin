@@ -54,6 +54,10 @@ app_services:
 grafana_admin_user: "{{ lookup('env', 'GRAFANA_ADMIN_USER') | default('admin', true) | trim }}"
 grafana_admin_password: "{{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') | default('changeme', true) | trim }}"
 
+# MLflow credentials (nginx htpasswd + MLflow native basic-auth, mêmes identifiants)
+mlflow_tracking_username: "{{ lookup('env', 'MLFLOW_TRACKING_USERNAME') | default('mlflow', true) | trim }}"
+mlflow_tracking_password: "{{ lookup('env', 'MLFLOW_TRACKING_PASSWORD') | default('changeme', true) | trim }}"
+
 # SMTP / alerting secrets (from GH Actions secrets via environment)
 smtp_host: "{{ lookup('env', 'SMTP_HOST') | default('smtp.gmail.com:587', true) | trim }}"
 smtp_user: "{{ lookup('env', 'SMTP_USER') | default('', true) | trim }}"
