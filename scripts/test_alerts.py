@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""Test du système d'alertes email.
+"""Test des emails *métier* (abonnés) Crypto Bot.
+
+L'alerting opérationnel (santé collecte / erreurs pipeline) est désormais géré
+par Prometheus + Grafana (voir infra/README.md). Ce script ne teste plus que
+les emails business adressés à un abonné.
 
 Usage:
-    python scripts/test_alerts.py           # envoie les 3 types d'alertes
-    python scripts/test_alerts.py --config  # affiche la config sans envoyer
+    python scripts/test_alerts.py --to me@example.com   # envoie les emails business
+    python scripts/test_alerts.py --config               # affiche la config sans envoyer
 """
 
 import argparse
@@ -13,55 +17,49 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
-from src.notifications.notifier import (
-    _enabled, _CREATOR_EMAIL, _FROM, _HOST, _PORT,
-    _get_subscriber_emails, _recipients,
-    notify_collect_start, notify_collect_end, notify_collect_error,
+from src.notifications.notifier import (  # noqa: E402
+    _enabled,
+    _FROM,
+    _HOST,
+    _PORT,
+    notify_subscribe_confirmation,
+    notify_unsubscribe_confirmation,
 )
 
 GREEN = "\033[92m"
-YELLOW = "\033[93m"
 RED = "\033[91m"
 BOLD = "\033[1m"
 RESET = "\033[0m"
 
 
-def show_config():
-    print(f"\n{BOLD}Configuration alertes{RESET}")
-    print(f"  SMTP         : {_HOST}:{_PORT}")
-    print(f"  Expéditeur   : {_FROM or '(non défini)'}")
-    print(f"  Créateur     : {_CREATOR_EMAIL or '(non défini)'}")
-    print(f"  Actif        : {GREEN + 'OUI' if _enabled() else RED + 'NON (FROM ou PASSWORD manquant)'}{RESET}")
-
-    subs = _get_subscriber_emails()
-    print(f"  Abonnés DB   : {len(subs)}")
-    for e in subs:
-        print(f"    · {e}")
-
-    all_recipients = _recipients()
-    print(f"  Destinataires: {len(all_recipients)}")
-    for e in all_recipients:
-        print(f"    · {e}")
-    print()
+def show_config() -> None:
+    print(f"\n{BOLD}Configuration emails business{RESET}")
+    print(f"  SMTP       : {_HOST}:{_PORT}")
+    print(f"  Expéditeur : {_FROM or '(non défini)'}")
+    state = GREEN + "OUI" if _enabled() else RED + "NON (FROM ou PASSWORD manquant)"
+    print(f"  Actif      : {state}{RESET}\n")
 
 
-def run_tests():
-    print(f"\n{BOLD}Test 1 — Alerte démarrage collecte (manuel){RESET}")
-    notify_collect_start(["binance", "kraken"], trigger="manuel")
+def run_tests(to: str) -> None:
+    print(f"\n{BOLD}Test 1 — Confirmation d'inscription{RESET}")
+    notify_subscribe_confirmation(
+        to,
+        articles=[
+            {
+                "title": "BTC franchit un nouveau seuil",
+                "source": "CoinDesk",
+                "published_at": "2026-06-09T08:00",
+                "sentiment_label": "positive",
+            },
+        ],
+    )
     print(f"  {GREEN}Envoyé (ou ignoré si config manquante){RESET}")
 
-    print(f"\n{BOLD}Test 2a — Alerte fin (nouvelles bougies){RESET}")
-    notify_collect_end(["binance"], {"total_raw_rows": 27, "total_loaded_rows": 15, "total_symbols": 9, "successful": 9, "failed": 0}, duration_s=37)
-    print(f"  {GREEN}Envoyé{RESET}")
-
-    print(f"\n{BOLD}Test 2b — Alerte fin (données déjà à jour){RESET}")
-    notify_collect_end(["binance"], {"total_raw_rows": 27, "total_loaded_rows": 0, "total_symbols": 9, "successful": 9, "failed": 0}, duration_s=22)
-    print(f"  {GREEN}Envoyé{RESET}")
-
-    print(f"\n{BOLD}Test 3 — Alerte erreur{RESET}")
-    notify_collect_error("Connection timeout sur binance après 3 tentatives")
+    print(f"\n{BOLD}Test 2 — Confirmation de désabonnement{RESET}")
+    notify_unsubscribe_confirmation(to)
     print(f"  {GREEN}Envoyé{RESET}")
 
     print(f"\n{GREEN}Tests terminés. Vérifiez votre boîte mail.{RESET}\n")
@@ -70,11 +68,16 @@ def run_tests():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", action="store_true", help="Affiche la config sans envoyer")
+    parser.add_argument("--to", type=str, default="", help="Destinataire de test")
     args = parser.parse_args()
 
     show_config()
-    if not args.config:
-        if not _enabled():
-            print(f"{RED}Alertes désactivées — vérifiez ALERT_EMAIL_FROM et ALERT_EMAIL_PASSWORD dans .env{RESET}\n")
-            sys.exit(1)
-        run_tests()
+    if args.config:
+        sys.exit(0)
+    if not _enabled():
+        print(f"{RED}Emails désactivés — vérifiez ALERT_EMAIL_FROM et ALERT_EMAIL_PASSWORD{RESET}\n")
+        sys.exit(1)
+    if not args.to:
+        print(f"{RED}Spécifiez un destinataire avec --to me@example.com{RESET}\n")
+        sys.exit(1)
+    run_tests(args.to)

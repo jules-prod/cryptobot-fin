@@ -32,6 +32,37 @@
         hour: "2"
         job: "certbot renew --quiet --post-hook 'systemctl reload nginx'"
 
+    - name: Ensure node-exporter textfile dir exists
+      file:
+        path: /var/lib/node_exporter/textfile
+        state: directory
+        mode: "0755"
+
+    - name: Install certbot deploy-hook that publishes SSL expiry metric
+      copy:
+        dest: /etc/letsencrypt/renewal-hooks/deploy/10-node-exporter-ssl-metric.sh
+        mode: "0755"
+        content: |
+          #!/usr/bin/env bash
+          # Writes the certificate expiry timestamp for the node-exporter
+          # textfile collector. Run by certbot on every successful renewal.
+          set -euo pipefail
+          DIR=/var/lib/node_exporter/textfile
+          CERT=/etc/letsencrypt/live/{{ domain_name }}/cert.pem
+          mkdir -p "$DIR"
+          EXP=$(date -d "$(openssl x509 -enddate -noout -in "$CERT" | cut -d= -f2)" +%s)
+          TMP="$DIR/.cryptobot_ssl.prom.$$"
+          {
+            echo '# HELP cryptobot_ssl_cert_expiry_timestamp_seconds Unix time when the TLS cert expires.'
+            echo '# TYPE cryptobot_ssl_cert_expiry_timestamp_seconds gauge'
+            echo "cryptobot_ssl_cert_expiry_timestamp_seconds{domain=\"{{ domain_name }}\"} $EXP"
+          } > "$TMP"
+          mv "$TMP" "$DIR/cryptobot_ssl.prom"
+
+    - name: Run SSL expiry metric hook once now
+      command: /etc/letsencrypt/renewal-hooks/deploy/10-node-exporter-ssl-metric.sh
+      changed_when: true
+
     - name: Reload nginx after cert install
       systemd:
         name: nginx
