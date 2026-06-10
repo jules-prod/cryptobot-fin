@@ -59,6 +59,18 @@ server {
         proxy_set_header X-Forwarded-Prefix /grafana;
     }
 
+    # Observability — MLflow UI (basic-auth, same model as Grafana)
+    # MLflow serves under --static-prefix /mlflow, so the prefix is preserved
+    # (no rewrite). nginx forwards the Authorization header upstream, so the
+    # same credentials satisfy both this layer and MLflow native basic-auth.
+    location /mlflow/ {
+        auth_basic "Observability";
+        auth_basic_user_file /etc/nginx/.htpasswd-mlflow;
+        include /etc/nginx/snippets/proxy-params.conf;
+        proxy_pass http://127.0.0.1:5001;
+        proxy_set_header X-Forwarded-Prefix /mlflow;
+    }
+
     # Prometheus / Loki / Tempo NOT exposed publicly — accessed only by Grafana
     # via the docker crypto-net network. Less attack surface, simpler ops.
 

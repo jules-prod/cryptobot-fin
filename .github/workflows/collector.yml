@@ -46,6 +46,10 @@ jobs:
           ALERT_EMAIL_PASSWORD: ${{ secrets.ALERT_EMAIL_PASSWORD }}
           ALERT_SMTP_HOST: smtp.gmail.com
           ALERT_SMTP_PORT: "587"
+          # MLflow tracking en CI : DagsHub (MLflow hébergé, joignable depuis les
+          # runners GitHub). La prod utilise un MLflow self-hosted derrière nginx
+          # (https://dtsc-cryptobot.fr/mlflow), inaccessible depuis le CI. Les deux
+          # cibles sont donc volontairement distinctes. Cf infra/README.md.
           MLFLOW_TRACKING_URI: https://dagshub.com/Marivel75/_Crypto_Bot.mlflow
           MLFLOW_TRACKING_USERNAME: Marivel75
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
