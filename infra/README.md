@@ -66,10 +66,13 @@ cohérents et permettre la cohabitation sur le même vhost.
 | Accès externe | **public, sans auth** | TLS + basic-auth obligatoire |
 | Accès interne | docker `crypto-net` | inchangé (`api` écrit le sqlite via le volume `mlflow-data`) |
 
-Détail de l'astuce « credentials partagés » : nginx valide le `Authorization`
-basic-auth contre `.htpasswd-mlflow` **puis le transmet** au backend. En utilisant
-les **mêmes** identifiants pour le htpasswd et pour l'auth native MLflow, un seul
-prompt navigateur satisfait les deux couches.
+Détail de l'astuce « login unique » : MLflow partage les **mêmes** identifiants
+que Grafana. Le déploiement Ansible force `mlflow_tracking_username/password` =
+`grafana_admin_user/password` (cf. `group_vars/vps.yml`). nginx valide le
+`Authorization` basic-auth contre `.htpasswd-mlflow` **puis le transmet** au
+backend ; comme htpasswd ET auth native MLflow utilisent ce couple Grafana, un
+seul prompt navigateur — celui de Grafana — satisfait les deux couches. Le 2e
+prompt ne réclame **aucun** identifiant distinct (plus de `mlflow`/`changeme`).
 
 ## Tracking MLflow : CI vs prod (volontairement distinct)
 
@@ -88,29 +91,35 @@ CI ne peut pas atteindre le MLflow VPS et la prod ne doit pas dépendre d'un tie
 
 | Secret | Usage |
 |--------|-------|
-| `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD` | Grafana (htpasswd + login natif) |
-| `MLFLOW_TRACKING_USERNAME` / `MLFLOW_TRACKING_PASSWORD` | MLflow (htpasswd + basic-auth ; **aussi** utilisé en CI pour DagsHub) |
+| `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD` | Grafana **et MLflow** (htpasswd + login natif des deux) — **login unique** |
+| `MLFLOW_TRACKING_USERNAME` / `MLFLOW_TRACKING_PASSWORD` | **CI uniquement** (push DagsHub, user `Marivel75`). En prod, MLflow hérite des creds Grafana — ces secrets ne pilotent plus le VPS. |
 | `SMTP_HOST` / `SMTP_USER` / `SMTP_PASSWORD` / `SMTP_FROM` | Alerting Grafana |
 | `ALERT_EMAIL_TO` | Destinataire des alertes |
 | `VPS_HOST` / `VPS_SSH_KEY` | Déploiement Ansible |
 
 Vérifier la présence : `gh secret list -R jules-prod/cryptobot-fin`.
 
-### Rotation MLflow
+### Rotation des identifiants Grafana + MLflow (login unique)
+
+MLflow partage les identifiants de Grafana : **une seule rotation** couvre les deux.
 
 1. Mettre à jour les secrets GitHub :
    ```bash
-   gh secret set MLFLOW_TRACKING_USERNAME -R jules-prod/cryptobot-fin
-   gh secret set MLFLOW_TRACKING_PASSWORD -R jules-prod/cryptobot-fin
+   gh secret set GRAFANA_ADMIN_USER -R jules-prod/cryptobot-fin
+   gh secret set GRAFANA_ADMIN_PASSWORD -R jules-prod/cryptobot-fin
    ```
 2. Re-déclencher le déploiement (push sur `prod` ou `workflow_dispatch` sur
    `Deploy to VPS`). Ansible :
-   - réécrit `.env` sur le VPS (`MLFLOW_TRACKING_USERNAME/PASSWORD`),
-   - régénère `/etc/nginx/.htpasswd-mlflow` (idempotent, `community.general.htpasswd`),
-   - le conteneur `mlflow` régénère `basic_auth.ini` au démarrage et met à jour
-     l'utilisateur admin.
-3. Le fichier `.htpasswd-mlflow` n'est **jamais** committé : il vit sur le VPS,
-   généré par Ansible.
+   - réécrit `.env` sur le VPS (`GF_SECURITY_ADMIN_*` **et**
+     `MLFLOW_TRACKING_USERNAME/PASSWORD`, désormais identiques),
+   - régénère `/etc/nginx/.htpasswd-observability` **et** `/etc/nginx/.htpasswd-mlflow`
+     (idempotent, `community.general.htpasswd`),
+   - le conteneur `mlflow` régénère `basic_auth.ini` au démarrage avec le couple Grafana.
+3. Les fichiers `.htpasswd-*` ne sont **jamais** committés : ils vivent sur le VPS,
+   générés par Ansible à chaque redéploiement.
+
+> Le secret `MLFLOW_TRACKING_PASSWORD` reste utilisé par le CI (`collector.yml`)
+> pour pousser vers DagsHub (user `Marivel75`) — indépendant du MLflow VPS.
 
 ### Génération manuelle (debug VPS)
 
