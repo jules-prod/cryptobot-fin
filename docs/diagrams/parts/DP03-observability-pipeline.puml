@@ -1,0 +1,132 @@
+@startuml DP03-observability-pipeline
+' ============================================================
+' CryptoBot — PlantUML Shared Skin & Stereotypes
+' ============================================================
+
+' --- Theme clair (lisible GitHub) ---
+skinparam backgroundColor white
+skinparam defaultFontName "Segoe UI, Helvetica, Arial, sans-serif"
+skinparam defaultFontSize 16
+skinparam defaultFontColor #333333
+skinparam shadowing false
+skinparam roundCorner 6
+skinparam nodesep 35
+skinparam ranksep 50
+skinparam padding 3
+scale max 1920*1080
+
+' --- Component ---
+skinparam component {
+  BackgroundColor #F3EEFF
+  BorderColor #7C5CFC
+  FontColor #333333
+  ArrowColor #4A6FA5
+  StereotypeFontColor #7C5CFC
+}
+
+' --- Package ---
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #4A6FA5
+  FontColor #333333
+}
+
+' --- Database ---
+skinparam database {
+  BackgroundColor #ECFDF5
+  BorderColor #34A853
+  FontColor #333333
+}
+
+' --- Node (deployment) ---
+skinparam node {
+  BackgroundColor #F3EEFF
+  BorderColor #7C5CFC
+  FontColor #333333
+}
+
+' --- Note ---
+skinparam note {
+  BackgroundColor #FEF3E8
+  BorderColor #E8943A
+  FontColor #333333
+}
+
+' --- Legend ---
+skinparam legend {
+  BackgroundColor #F5F5F5
+  BorderColor #CCCCCC
+  FontColor #333333
+}
+
+title CryptoBot — Pipeline d'Observabilité Production V2 (état réel)
+caption OTLP → otel-collector → Tempo/Loki/Prometheus → Grafana | source: infra/otel/collector-config.yml + prometheus.yml
+
+' ============================================================
+' Sources de télémétrie
+' ============================================================
+package "Tier Application (instrumenté)" as app #F3EEFF {
+  component "api FastAPI\n/metrics + OTLP SDK" as api
+  component "collector\n/metrics :8001" as col
+}
+
+component "nginx (host)\nstub_status :8080" as nginx #FEF3E8
+component "nginx-exporter\n:9113" as nginxexp #FEF3E8
+
+' ============================================================
+' OTel Collector — hub télémétrie
+' ============================================================
+package "otel-collector (contrib 0.111)" as otelpkg #F3EEFF {
+  component "receivers: otlp\ngrpc :4317 / http :4318" as otlp_in
+  component "connectors\nspanmetrics · servicegraph" as connectors
+  component "exporters\nprometheus :8889 · loki · otlp/tempo" as otexp
+}
+
+' ============================================================
+' Backends de stockage
+' ============================================================
+node "Tempo 2.6\ntraces · local · 168h" as tempo #ECFDF5
+node "Loki 3.2\nlogs · filesystem · 168h" as loki #ECFDF5
+node "Prometheus v2.55\nmétriques · TSDB 15j" as prom #ECFDF5
+database "promtail 3.2\ndocker logs → loki" as promtail
+
+' ============================================================
+' Visualisation + alerting
+' ============================================================
+node "Grafana 11\n:3000 · /grafana (auth_basic)\ndatasources: prom/loki/tempo/sqlite" as grafana #F3EEFF
+cloud "SMTP Gmail\nalertes e-mail" as smtp
+actor "Utilisateur\n(HTTPS /grafana)" as user
+
+' ============================================================
+' Flux télémétrie
+' ============================================================
+api --> otlp_in : OTLP traces/logs/metrics
+col --> otlp_in : OTLP
+otlp_in --> connectors
+connectors --> otexp
+otexp --> tempo : otlp/tempo :4317 (traces)
+otexp --> loki  : push (logs)
+otexp --> prom  : scrape :8889 (spanmetrics/servicegraph)
+
+' --- scrape Prometheus ---
+prom --> api : scrape :8000/metrics
+prom --> col : scrape :8001/metrics
+nginx --> nginxexp : /nginx_status :8080
+nginxexp --> prom : métriques nginx (scrape :9113)
+promtail --> loki : ingest container logs
+
+' --- Grafana ---
+grafana --> prom : datasource
+grafana --> loki : datasource
+grafana --> tempo : datasource (trace→logs corrélation)
+grafana --> smtp : contact-point alertes
+user --> grafana : dashboards technical + business
+
+legend bottom left
+  |= Couleur    |= Rôle                          |
+  | <#F3EEFF>   | App / collecte / visualisation  |
+  | <#ECFDF5>   | Backends télémétrie (TSDB)      |
+  | <#FEF3E8>   | nginx (host) + exporter         |
+endlegend
+
+@enduml

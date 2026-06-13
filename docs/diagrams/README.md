@@ -59,6 +59,24 @@ plantuml -tpng docs/diagrams/parts/AC01-etl-pipeline.puml
 plantuml -tsvg docs/diagrams/parts/*.puml
 ```
 
+## Diagrammes Production & Soutenance (hors catalogue V2)
+
+Adaptation des 3 diagrammes externes (`data/0{1,2,3}.png`) à l'archi prod réelle (`docker compose ps` sur le VPS + branche `prod`), plus 2 vues complémentaires :
+
+| ID | Adapté de | Fichier | Description |
+|----|-----------|---------|-------------|
+| DP02 | **01** | `parts/DP02-architecture-globale.puml` | Architecture globale — **vraie prod VPS** (nginx + Docker), SQLite, MLflow nginx, + sécurité & sauvegarde |
+| DP05 | **02** | `parts/DP05-pipeline-etl.puml` | Pipeline ETL fidèle au 02 — Supabase PostgreSQL → **SQLite** |
+| DP06 | **03** | `parts/DP06-composants-ml.puml` | Composants ML fidèles au 03 — SQLite + **MLflow nginx** (ex-DagsHub) |
+| DP03 | — | `parts/DP03-observability-pipeline.puml` | Observabilité OTel → Prometheus/Loki/Tempo → Grafana + alerting |
+| DP04 | — | `parts/DP04-network-security.puml` | nginx reverse-proxy, TLS, auth_basic, rate-limit, UFW/fail2ban |
+
+> `DP01-docker-compose` reste la vue « code `main` » (4 services). DP02/DP05/DP06 = adaptation fidèle des 3 PNG. DP03/DP04 = compléments observabilité & sécurité.
+
+**Corrections appliquées** vs PNG externes : `Supabase PostgreSQL → SQLite` (DP02/DP05/DP06) · `DagsHub MLflow Tracking → MLflow Deployment nginx` (DP02/DP06) · hébergement free-tier (Render/Streamlit Cloud) → **VPS réel** (DP02).
+
+L'analyse détaillée des écarts est dans **`GAP-prod-vs-diagrammes-externes.md`**.
+
 ## Note sur `parts/`
 
 Le dossier `parts/` contient les 22 fragments sources `.puml`. Chaque fichier :
