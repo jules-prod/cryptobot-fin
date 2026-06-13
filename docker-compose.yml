@@ -31,11 +31,12 @@ services:
     env_file: .env
     environment:
       CRYPTO_BOT_DB_URL: sqlite:///data/processed/crypto_data.db
-      # Tracking via le SERVEUR MLflow (comme collector), PAS le fichier sqlite direct :
-      # garantit que les runs ET artefacts atterrissent sous --default-artifact-root
-      # /mlflow/artifacts (volume mlflow-data partagé, servi par l'UI). En sqlite direct,
-      # MLflow plaçait les artefacts dans /app/mlruns (FS éphémère de l'api, invisible UI).
-      MLFLOW_TRACKING_URI: http://mlflow:5000
+      # Tracking via le SERVEUR MLflow. ⚠️ Le serveur tourne avec --static-prefix
+      # /mlflow : son API REST est sous http://mlflow:5000/mlflow. SANS le préfixe,
+      # le client tape /api/2.0/... → 404 (get-by-name) → runs silencieusement perdus.
+      # AVEC le préfixe, le serveur range runs + artefacts sous /mlflow/artifacts
+      # (volume mlflow-data partagé, servi par l'UI), jamais dans le FS éphémère client.
+      MLFLOW_TRACKING_URI: http://mlflow:5000/mlflow
     ports:
       - "8000:8000"
     volumes:
@@ -82,6 +83,8 @@ services:
     environment:
       CRYPTO_BOT_DB_URL: sqlite:///data/processed/crypto_data.db
       CRYPTO_BOT_SCHEDULE_TIME: "08:00"
+      # Même serveur MLflow que l'api — préfixe /mlflow obligatoire (cf. service api).
+      MLFLOW_TRACKING_URI: http://mlflow:5000/mlflow
     volumes:
       - ./data:/app/data
     networks:
