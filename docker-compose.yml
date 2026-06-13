@@ -5,9 +5,9 @@ services:
       dockerfile: mlflow/Dockerfile
     restart: unless-stopped
     env_file: .env
-    environment:
-      MLFLOW_TRACKING_USERNAME: ${MLFLOW_TRACKING_USERNAME}
-      MLFLOW_TRACKING_PASSWORD: ${MLFLOW_TRACKING_PASSWORD}
+    # Plus de variables MLflow ici : l'auth native est retirée (protection nginx
+    # seule). MLFLOW_TRACKING_* restent dans .env (consommés par nginx htpasswd via
+    # Ansible) mais ne sont plus lus par le conteneur mlflow.
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/mlflow/health"]
       interval: 30s
