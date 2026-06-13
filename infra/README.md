@@ -78,13 +78,22 @@ un seul prompt — celui de Grafana — protège `/mlflow/`. L'auth native MLflo
 retirée car son `basic_auth.ini` (configparser) plantait sur les mots de passe à
 caractères spéciaux, faisant crasher le conteneur (502).
 
+**Connexion à `/mlflow/` (casse SENSIBLE) :**
+- **Login** : `cryptobot-admin` — **tout en minuscules**. `Cryptobot-Admin` est refusé
+  et fait réapparaître le prompt (ce n'est PAS un bug d'auth).
+- **Mot de passe** : celui de Grafana (`GRAFANA_ADMIN_PASSWORD`, ~32 caractères).
+
 ## Tracking MLflow : CI vs prod (volontairement distinct)
 
 - **CI** (`.github/workflows/collector.yml`) : `MLFLOW_TRACKING_URI` pointe sur
   **DagsHub** (`https://dagshub.com/Marivel75/_Crypto_Bot.mlflow`), un MLflow hébergé
   joignable depuis les runners GitHub.
-- **Prod** : MLflow **self-hosted** (sqlite) derrière nginx, non joignable depuis
-  le CI. Le service `api` écrit directement le fichier sqlite via le volume partagé.
+- **Prod (app)** : MLflow **self-hosted** derrière nginx. Les services `api` **et**
+  `collector` traquent via le **serveur** (`MLFLOW_TRACKING_URI=http://mlflow:5000`),
+  qui range runs **et** artefacts sous `--default-artifact-root /mlflow/artifacts`
+  (volume `mlflow-data` partagé, servi par l'UI). ⚠️ Ne PAS utiliser le tracking sqlite
+  direct côté client (`sqlite:////mlflow/mlflow.db`) : MLflow plaçait alors les artefacts
+  dans `/app/mlruns` (FS éphémère de l'api, invisibles dans l'UI et perdus au redeploy).
 
 Les deux cibles sont indépendantes par conception : pas d'unification car le runner
 CI ne peut pas atteindre le MLflow VPS et la prod ne doit pas dépendre d'un tiers.

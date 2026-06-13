@@ -31,7 +31,11 @@ services:
     env_file: .env
     environment:
       CRYPTO_BOT_DB_URL: sqlite:///data/processed/crypto_data.db
-      MLFLOW_TRACKING_URI: sqlite:////mlflow/mlflow.db
+      # Tracking via le SERVEUR MLflow (comme collector), PAS le fichier sqlite direct :
+      # garantit que les runs ET artefacts atterrissent sous --default-artifact-root
+      # /mlflow/artifacts (volume mlflow-data partagé, servi par l'UI). En sqlite direct,
+      # MLflow plaçait les artefacts dans /app/mlruns (FS éphémère de l'api, invisible UI).
+      MLFLOW_TRACKING_URI: http://mlflow:5000
     ports:
       - "8000:8000"
     volumes:
