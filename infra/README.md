@@ -160,6 +160,71 @@ CryptoBot sépare deux couches d'alerting :
   alertes vers le contact `cryptobot-email` (`${ALERT_EMAIL_TO}`, destinataire
   par défaut `douirx@gmail.com` — overridable via la variable d'env / secret GH).
 
+> **Organisation Grafana** : les règles d'alerte sont réparties dans les **deux
+> dossiers Grafana existants** (les mêmes que les dashboards) — **plus aucun
+> dossier `CryptoBot` séparé**. `alerting/alerts.yml` définit deux groupes :
+>
+> - groupe `cryptobot-business` → `folder: Business` : alertes **service /
+>   produit** (API 5xx, staleness collecteur, erreur de pipeline, backup obsolète) ;
+> - groupe `cryptobot-technical` → `folder: Technical` : alertes **infra /
+>   système** (container down, disque, CPU/mémoire host, latence p99, Loki,
+>   Tempo, expiration SSL).
+>
+> Les noms `Business` / `Technical` matchent exactement les `folder:` du provider
+> dashboards (`dashboards/dashboards.yml`). Les dossiers sont créés/réutilisés
+> par provisioning : aucune création manuelle nécessaire.
+
+## Tester l'envoi d'email depuis Grafana
+
+Le contact point `cryptobot-email` reste **testable depuis l'UI** même
+provisionné (le bouton natif n'est pas désactivé par le provisioning) :
+
+```
+Grafana → Alerting → Contact points → cryptobot-email
+        → bouton "Test" → "Send test notification"
+```
+
+Un email de test part immédiatement vers `${ALERT_EMAIL_TO}` sans attendre
+qu'une vraie alerte se déclenche.
+
+> ⚠️ **Le test échouera tant que `SMTP_PASSWORD` n'est pas un mot de passe
+> d'application Gmail valide.** L'erreur observée aujourd'hui est
+> `535 5.7.8 Username and Password not accepted` (Gmail `BadCredentials`) : le
+> mot de passe d'application est invalide/expiré. **Ce n'est pas un bug de
+> code** — voir l'audit SMTP ci-dessous.
+
+## Audit SMTP (Grafana → Gmail)
+
+Configuration `docker-compose.yml` (service `grafana`) — alimentée par les
+secrets injectés dans `.env` par Ansible (`deploy.yml`), eux-mêmes issus des
+secrets GitHub `SMTP_*` :
+
+| Variable Grafana | Source | Valeur attendue (Gmail) |
+|------------------|--------|-------------------------|
+| `GF_SMTP_ENABLED` | en dur | `"true"` ✓ |
+| `GF_SMTP_HOST` | `${SMTP_HOST}` | `smtp.gmail.com:587` (format `host:port` ; STARTTLS auto sur 587). Défaut Ansible `group_vars/vps.yml` = `smtp.gmail.com:587` ✓ |
+| `GF_SMTP_USER` | `${SMTP_USER}` | **l'adresse Gmail complète** propriétaire du mot de passe d'app (ex. `cryptobot@gmail.com`) |
+| `GF_SMTP_PASSWORD` | `${SMTP_PASSWORD}` | **mot de passe d'application Gmail à 16 caractères** (PAS le mot de passe du compte) |
+| `GF_SMTP_FROM_ADDRESS` | `${SMTP_FROM}` | la même adresse Gmail que `SMTP_USER` |
+| `GF_SMTP_FROM_NAME` | en dur | `"CryptoBot Grafana"` ✓ |
+| `GF_SMTP_SKIP_VERIFY` | en dur | `"false"` ✓ (Gmail présente un certificat TLS valide) |
+
+**Verdict** : la config est structurellement correcte. Le seul point bloquant
+est la **valeur** de `SMTP_PASSWORD`. Pour que le test passe, Jules doit poser
+dans les secrets GitHub (`gh secret set ... -R jules-prod/cryptobot-fin`) puis
+re-déployer :
+
+- `SMTP_USER` = adresse Gmail complète (ex. `cryptobot@gmail.com`) ;
+- `SMTP_PASSWORD` = **mot de passe d'application Gmail (16 caractères)** généré
+  sur <https://myaccount.google.com/apppasswords> (2FA requise) — collé **sans
+  espaces** ;
+- `SMTP_FROM` = identique à `SMTP_USER` ;
+- `SMTP_HOST` = `smtp.gmail.com:587` (ou laisser vide : défaut Ansible).
+
+> Le mot de passe du compte Google **ne fonctionne pas** pour SMTP : Gmail exige
+> un mot de passe d'application dédié. Aucun secret n'est committé — ces valeurs
+> vivent uniquement dans les secrets GitHub et le `.env` du VPS.
+
 ## Migration : ce qui a quitté le code app → où c'est parti
 
 | Avant (app, `notifier.py`) | Nature | Après |
@@ -195,26 +260,28 @@ Métriques infra alimentées par le textfile collector de node-exporter
 | `cryptobot_backup_last_success_timestamp_seconds` | `ansible/playbooks/backup.yml` | epoch du dernier backup réussi |
 | `cryptobot_ssl_cert_expiry_timestamp_seconds{domain}` | `ansible/playbooks/ssl.yml` (deploy-hook certbot) | epoch d'expiration du certificat TLS |
 
-## Matrice des alertes infra
+## Matrice des alertes (Business + Technical)
 
 Toutes les règles vivent dans `grafana/provisioning/alerting/alerts.yml`,
 sont évaluées par Grafana et routées vers `cryptobot-email`
-(`policies.yml` → tout vers `cryptobot-email`).
+(`policies.yml` → tout vers `cryptobot-email`). Elles sont rangées dans deux
+dossiers Grafana **existants** (`Business`, `Technical`) — aucun dossier
+`CryptoBot`. La colonne **Dossier** indique l'emplacement de chaque règle.
 
-| Alerte (uid) | Source métrique (job) | Seuil | `for` | Sévérité | Canal |
-|--------------|-----------------------|-------|-------|----------|-------|
-| `alert-5xx-rate` | `http_requests_total` (api) | ratio 5xx > 1 % | 5m | critical | cryptobot-email |
-| `alert-p99-latency` | `http_request_duration_seconds_bucket` (api) | p99 > 1 s | 5m | warning | cryptobot-email |
-| `alert-container-down` | `up{job=~"api\|collector\|frontend\|mlflow"}` | == 0 | 2m | critical | cryptobot-email |
-| `alert-disk-usage` | `node_filesystem_*` (node) | > 80 % | 10m | warning | cryptobot-email |
-| `alert-collector-stale` | `collector_last_success_timestamp_seconds` (collector) | age > 26 h | 15m | critical | cryptobot-email |
-| `alert-collector-errors` | `collector_run_errors_total` (collector) | `increase[1h]` > 0 | 0m | critical | cryptobot-email |
-| `alert-backup-stale` | `cryptobot_backup_last_success_timestamp_seconds` (node) | age > 48 h | 0m | critical | cryptobot-email |
-| `alert-ssl-expiry` | `cryptobot_ssl_cert_expiry_timestamp_seconds` (node) | reste < 14 j | 1h | warning | cryptobot-email |
-| `alert-host-memory` | `node_memory_*` (node) | > 90 % | 10m | warning | cryptobot-email |
-| `alert-host-cpu` | `node_cpu_seconds_total` (node) | > 90 % | 10m | warning | cryptobot-email |
-| `alert-loki-down` | `up{job="loki"}` | == 0 | 5m | warning | cryptobot-email |
-| `alert-tempo-down` | `up{job="tempo"}` | == 0 | 5m | warning | cryptobot-email |
+| Alerte (uid) | Dossier | Groupe | Source métrique (job) | Seuil | `for` | Sévérité | Canal |
+|--------------|---------|--------|-----------------------|-------|-------|----------|-------|
+| `alert-5xx-rate` | Business | `cryptobot-business` | `http_requests_total` (api) | ratio 5xx > 1 % | 5m | critical | cryptobot-email |
+| `alert-collector-stale` | Business | `cryptobot-business` | `collector_last_success_timestamp_seconds` (collector) | age > 26 h | 15m | critical | cryptobot-email |
+| `alert-collector-errors` | Business | `cryptobot-business` | `collector_run_errors_total` (collector) | `increase[1h]` > 0 | 0m | critical | cryptobot-email |
+| `alert-backup-stale` | Business | `cryptobot-business` | `cryptobot_backup_last_success_timestamp_seconds` (node) | age > 48 h | 0m | critical | cryptobot-email |
+| `alert-p99-latency` | Technical | `cryptobot-technical` | `http_request_duration_seconds_bucket` (api) | p99 > 1 s | 5m | warning | cryptobot-email |
+| `alert-container-down` | Technical | `cryptobot-technical` | `up{job=~"api\|collector\|frontend\|mlflow"}` | == 0 | 2m | critical | cryptobot-email |
+| `alert-disk-usage` | Technical | `cryptobot-technical` | `node_filesystem_*` (node) | > 80 % | 10m | warning | cryptobot-email |
+| `alert-ssl-expiry` | Technical | `cryptobot-technical` | `cryptobot_ssl_cert_expiry_timestamp_seconds` (node) | reste < 14 j | 1h | warning | cryptobot-email |
+| `alert-host-memory` | Technical | `cryptobot-technical` | `node_memory_*` (node) | > 90 % | 10m | warning | cryptobot-email |
+| `alert-host-cpu` | Technical | `cryptobot-technical` | `node_cpu_seconds_total` (node) | > 90 % | 10m | warning | cryptobot-email |
+| `alert-loki-down` | Technical | `cryptobot-technical` | `up{job="loki"}` | == 0 | 5m | warning | cryptobot-email |
+| `alert-tempo-down` | Technical | `cryptobot-technical` | `up{job="tempo"}` | == 0 | 5m | warning | cryptobot-email |
 
 `alert-disk-usage` existait mais était inerte (aucune cible `node-exporter`
 scrappée) ; l'ajout du service `node-exporter` + job Prometheus `node` la rend
