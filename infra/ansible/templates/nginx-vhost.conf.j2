@@ -59,10 +59,11 @@ server {
         proxy_set_header X-Forwarded-Prefix /grafana;
     }
 
-    # Observability — MLflow UI (basic-auth, same model as Grafana)
+    # Observability — MLflow UI (basic-auth, same model as Grafana).
     # MLflow serves under --static-prefix /mlflow, so the prefix is preserved
-    # (no rewrite). nginx forwards the Authorization header upstream, so the
-    # same credentials satisfy both this layer and MLflow native basic-auth.
+    # (no rewrite). nginx basic-auth (.htpasswd-mlflow = Grafana creds) is the
+    # SOLE auth layer: MLflow native auth was removed (its configparser .ini
+    # crashed on special chars in the password — caused 502).
     location /mlflow/ {
         auth_basic "Observability";
         auth_basic_user_file /etc/nginx/.htpasswd-mlflow;

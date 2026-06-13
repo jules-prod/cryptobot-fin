@@ -30,7 +30,7 @@ nginx --> grafana : /grafana/ (htpasswd-observability)
 nginx --> mlflow : /mlflow/ (htpasswd-mlflow)\n127.0.0.1:5001
 api ..> mlflow : sqlite direct\n(volume mlflow-data)
 grafana ..> obs : crypto-net
-mlflow ..> mlflow : basic-auth native
+note right of mlflow : auth = nginx basic-auth seul\n(htpasswd-mlflow = creds Grafana)
 @enduml
 ```
 
@@ -40,12 +40,16 @@ derrière nginx.
 
 ## Sécurité des endpoints d'observabilité
 
-Grafana et MLflow suivent le **même modèle à deux couches** :
+Grafana et MLflow ne suivent **pas** le même modèle d'auth :
 
-1. **Périmètre (nginx)** : `auth_basic` + fichier htpasswd dédié, généré par Ansible
-   à partir de variables (jamais en clair dans le repo).
-2. **Application** : login natif (Grafana `GF_SECURITY_ADMIN_*` / MLflow
-   `--app-name basic-auth`), credentials via variables d'environnement.
+- **Grafana** : deux couches — `auth_basic` nginx (`.htpasswd-observability`) **et**
+  login natif (`GF_SECURITY_ADMIN_*`).
+- **MLflow** : **une seule** couche — `auth_basic` nginx (`.htpasswd-mlflow`).
+  L'auth native MLflow a été **retirée** : son `basic_auth.ini` (lu par configparser)
+  plantait sur les caractères spéciaux du mot de passe Grafana → 502.
+
+Les deux fichiers htpasswd sont générés par Ansible à partir de variables (jamais
+en clair dans le repo) et utilisent les **mêmes identifiants que Grafana**.
 
 Les deux sont servis sous un **sous-chemin** (`/grafana`, `/mlflow`) pour rester
 cohérents et permettre la cohabitation sur le même vhost.
@@ -53,7 +57,7 @@ cohérents et permettre la cohabitation sur le même vhost.
 | Endpoint | nginx | htpasswd | App auth | Sous-chemin |
 |----------|-------|----------|----------|-------------|
 | Grafana  | `/grafana/` | `.htpasswd-observability` | `GF_SECURITY_ADMIN_*` | `GF_SERVER_SERVE_FROM_SUB_PATH` |
-| MLflow   | `/mlflow/`  | `.htpasswd-mlflow`        | `--app-name basic-auth` | `--static-prefix /mlflow` |
+| MLflow   | `/mlflow/`  | `.htpasswd-mlflow`        | **aucune** (native retirée) | `--static-prefix /mlflow` |
 
 ### MLflow — avant / après
 
@@ -61,18 +65,18 @@ cohérents et permettre la cohabitation sur le même vhost.
 |-|-------|-------|
 | Publication port | `5001:5000` (exposé sur **toutes** les interfaces) | `127.0.0.1:5001:5000` (localhost only) |
 | Route nginx | aucune | `/mlflow/` avec `auth_basic` + `.htpasswd-mlflow` |
-| Auth applicative | aucune | `--app-name basic-auth` (basic_auth.ini généré au runtime) |
+| Auth applicative | aucune | **aucune** — auth native retirée (cassait sur mots de passe à caractères spéciaux → 502) |
 | Sous-chemin | non | `--static-prefix /mlflow` |
 | Accès externe | **public, sans auth** | TLS + basic-auth obligatoire |
 | Accès interne | docker `crypto-net` | inchangé (`api` écrit le sqlite via le volume `mlflow-data`) |
 
-Détail de l'astuce « login unique » : MLflow partage les **mêmes** identifiants
-que Grafana. Le déploiement Ansible force `mlflow_tracking_username/password` =
-`grafana_admin_user/password` (cf. `group_vars/vps.yml`). nginx valide le
-`Authorization` basic-auth contre `.htpasswd-mlflow` **puis le transmet** au
-backend ; comme htpasswd ET auth native MLflow utilisent ce couple Grafana, un
-seul prompt navigateur — celui de Grafana — satisfait les deux couches. Le 2e
-prompt ne réclame **aucun** identifiant distinct (plus de `mlflow`/`changeme`).
+Détail « login unique » : MLflow partage les **mêmes** identifiants que Grafana.
+Le déploiement Ansible force `mlflow_tracking_username/password` =
+`grafana_admin_user/password` (cf. `group_vars/vps.yml`), ce qui alimente
+`.htpasswd-mlflow`. nginx (basic-auth) est désormais la **seule** couche d'auth :
+un seul prompt — celui de Grafana — protège `/mlflow/`. L'auth native MLflow a été
+retirée car son `basic_auth.ini` (configparser) plantait sur les mots de passe à
+caractères spéciaux, faisant crasher le conteneur (502).
 
 ## Tracking MLflow : CI vs prod (volontairement distinct)
 
@@ -114,7 +118,8 @@ MLflow partage les identifiants de Grafana : **une seule rotation** couvre les d
      `MLFLOW_TRACKING_USERNAME/PASSWORD`, désormais identiques),
    - régénère `/etc/nginx/.htpasswd-observability` **et** `/etc/nginx/.htpasswd-mlflow`
      (idempotent, `community.general.htpasswd`),
-   - le conteneur `mlflow` régénère `basic_auth.ini` au démarrage avec le couple Grafana.
+   - le conteneur `mlflow` redémarre sans auth native ; la protection `/mlflow/` est
+     assurée uniquement par `.htpasswd-mlflow` (couche nginx).
 3. Les fichiers `.htpasswd-*` ne sont **jamais** committés : ils vivent sur le VPS,
    générés par Ansible à chaque redéploiement.
 

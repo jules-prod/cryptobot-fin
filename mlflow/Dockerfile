@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 
-# mlflow[auth] tire les dépendances du plugin basic-auth (Flask, etc.)
-RUN pip install --no-cache-dir "mlflow[auth]>=2.10.0"
+# Auth native MLflow retirée (protection nginx seule) — plus besoin du plugin basic-auth.
+RUN pip install --no-cache-dir "mlflow>=2.10.0"
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
