@@ -88,17 +88,17 @@ caractères spéciaux, faisant crasher le conteneur (502).
 - **CI** (`.github/workflows/collector.yml`) : `MLFLOW_TRACKING_URI` pointe sur
   **DagsHub** (`https://dagshub.com/Marivel75/_Crypto_Bot.mlflow`), un MLflow hébergé
   joignable depuis les runners GitHub.
-- **Prod (app)** : MLflow **self-hosted** derrière nginx. Le service `api` (endpoint
-  `/ml/backtest` appelé par Streamlit) traque via le **serveur**
-  (`MLFLOW_TRACKING_URI=http://mlflow:5000/mlflow`). ⚠️ Le préfixe `/mlflow` est
-  **obligatoire** : le serveur tourne avec `--static-prefix /mlflow`, donc son API REST
-  est sous `/mlflow/api/...`. Sans le préfixe → `404` sur `get-by-name` → runs perdus
-  **silencieusement** (dégradation gracieuse de `mlflow_utils`). Avec le préfixe, runs
-  **et** artefacts vont sous `--default-artifact-root /mlflow/artifacts` (volume
-  `mlflow-data` partagé, servi par l'UI). Le `collector` est configuré de même.
-  ⚠️ Ne PAS utiliser le tracking sqlite direct (`sqlite:////mlflow/mlflow.db`) côté
-  client : MLflow plaçait alors les artefacts dans `/app/mlruns` (FS éphémère, invisibles
-  dans l'UI et perdus au redeploy).
+- **Prod (app)** : MLflow **self-hosted** (épinglé **2.x**) derrière nginx. Le service
+  `api` (endpoint `/ml/backtest` appelé par Streamlit) et le `collector` traquent via le
+  **serveur** avec `MLFLOW_TRACKING_URI=http://mlflow:5000` — **SANS** `/mlflow`. ⚠️ En
+  MLflow 2.x, `--static-prefix /mlflow` ne s'applique qu'à l'**UI navigateur** + `ajax-api` ;
+  l'**API REST client** reste à la **racine** (`/api/2.0/...`). Mettre `/mlflow` dans l'URI
+  client → `404` → runs perdus silencieusement. (En 3.x c'était l'inverse — d'où le pin 2.x.)
+  Le serveur range runs **et** artefacts sous `--default-artifact-root /mlflow/artifacts`
+  (volume `mlflow-data` partagé, servi par l'UI). L'UI navigateur reste sous
+  `https://<domaine>/mlflow/` (nginx → `127.0.0.1:5001`). ⚠️ Ne PAS utiliser le tracking
+  sqlite direct (`sqlite:////mlflow/mlflow.db`) côté client : artefacts dans `/app/mlruns`
+  (FS éphémère, invisibles dans l'UI et perdus au redeploy).
 
 Les deux cibles sont indépendantes par conception : pas d'unification car le runner
 CI ne peut pas atteindre le MLflow VPS et la prod ne doit pas dépendre d'un tiers.
