@@ -146,6 +146,65 @@ CryptoBot sépare deux couches d'alerting :
   alertes vers le contact `cryptobot-email` (`${ALERT_EMAIL_TO}`, destinataire
   par défaut `douirx@gmail.com` — overridable via la variable d'env / secret GH).
 
+> **Organisation Grafana** : les règles d'alerte vivent dans le **même dossier
+> Grafana que les dashboards techniques** : `Technical`. Il n'existe plus de
+> dossier `CryptoBot` séparé. Les deux groupes (`cryptobot-critical`,
+> `cryptobot-infra`) de `alerting/alerts.yml` portent `folder: Technical`, qui
+> correspond exactement au `folder:` du provider dashboards `technical`
+> (`dashboards/dashboards.yml`). Le dossier est créé/réutilisé par provisioning :
+> aucune création manuelle nécessaire.
+
+## Tester l'envoi d'email depuis Grafana
+
+Le contact point `cryptobot-email` reste **testable depuis l'UI** même
+provisionné (le bouton natif n'est pas désactivé par le provisioning) :
+
+```
+Grafana → Alerting → Contact points → cryptobot-email
+        → bouton "Test" → "Send test notification"
+```
+
+Un email de test part immédiatement vers `${ALERT_EMAIL_TO}` sans attendre
+qu'une vraie alerte se déclenche.
+
+> ⚠️ **Le test échouera tant que `SMTP_PASSWORD` n'est pas un mot de passe
+> d'application Gmail valide.** L'erreur observée aujourd'hui est
+> `535 5.7.8 Username and Password not accepted` (Gmail `BadCredentials`) : le
+> mot de passe d'application est invalide/expiré. **Ce n'est pas un bug de
+> code** — voir l'audit SMTP ci-dessous.
+
+## Audit SMTP (Grafana → Gmail)
+
+Configuration `docker-compose.yml` (service `grafana`) — alimentée par les
+secrets injectés dans `.env` par Ansible (`deploy.yml`), eux-mêmes issus des
+secrets GitHub `SMTP_*` :
+
+| Variable Grafana | Source | Valeur attendue (Gmail) |
+|------------------|--------|-------------------------|
+| `GF_SMTP_ENABLED` | en dur | `"true"` ✓ |
+| `GF_SMTP_HOST` | `${SMTP_HOST}` | `smtp.gmail.com:587` (format `host:port` ; STARTTLS auto sur 587). Défaut Ansible `group_vars/vps.yml` = `smtp.gmail.com:587` ✓ |
+| `GF_SMTP_USER` | `${SMTP_USER}` | **l'adresse Gmail complète** propriétaire du mot de passe d'app (ex. `cryptobot@gmail.com`) |
+| `GF_SMTP_PASSWORD` | `${SMTP_PASSWORD}` | **mot de passe d'application Gmail à 16 caractères** (PAS le mot de passe du compte) |
+| `GF_SMTP_FROM_ADDRESS` | `${SMTP_FROM}` | la même adresse Gmail que `SMTP_USER` |
+| `GF_SMTP_FROM_NAME` | en dur | `"CryptoBot Grafana"` ✓ |
+| `GF_SMTP_SKIP_VERIFY` | en dur | `"false"` ✓ (Gmail présente un certificat TLS valide) |
+
+**Verdict** : la config est structurellement correcte. Le seul point bloquant
+est la **valeur** de `SMTP_PASSWORD`. Pour que le test passe, Jules doit poser
+dans les secrets GitHub (`gh secret set ... -R jules-prod/cryptobot-fin`) puis
+re-déployer :
+
+- `SMTP_USER` = adresse Gmail complète (ex. `cryptobot@gmail.com`) ;
+- `SMTP_PASSWORD` = **mot de passe d'application Gmail (16 caractères)** généré
+  sur <https://myaccount.google.com/apppasswords> (2FA requise) — collé **sans
+  espaces** ;
+- `SMTP_FROM` = identique à `SMTP_USER` ;
+- `SMTP_HOST` = `smtp.gmail.com:587` (ou laisser vide : défaut Ansible).
+
+> Le mot de passe du compte Google **ne fonctionne pas** pour SMTP : Gmail exige
+> un mot de passe d'application dédié. Aucun secret n'est committé — ces valeurs
+> vivent uniquement dans les secrets GitHub et le `.env` du VPS.
+
 ## Migration : ce qui a quitté le code app → où c'est parti
 
 | Avant (app, `notifier.py`) | Nature | Après |
