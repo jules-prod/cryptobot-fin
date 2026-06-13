@@ -146,13 +146,19 @@ CryptoBot sépare deux couches d'alerting :
   alertes vers le contact `cryptobot-email` (`${ALERT_EMAIL_TO}`, destinataire
   par défaut `douirx@gmail.com` — overridable via la variable d'env / secret GH).
 
-> **Organisation Grafana** : les règles d'alerte vivent dans le **même dossier
-> Grafana que les dashboards techniques** : `Technical`. Il n'existe plus de
-> dossier `CryptoBot` séparé. Les deux groupes (`cryptobot-critical`,
-> `cryptobot-infra`) de `alerting/alerts.yml` portent `folder: Technical`, qui
-> correspond exactement au `folder:` du provider dashboards `technical`
-> (`dashboards/dashboards.yml`). Le dossier est créé/réutilisé par provisioning :
-> aucune création manuelle nécessaire.
+> **Organisation Grafana** : les règles d'alerte sont réparties dans les **deux
+> dossiers Grafana existants** (les mêmes que les dashboards) — **plus aucun
+> dossier `CryptoBot` séparé**. `alerting/alerts.yml` définit deux groupes :
+>
+> - groupe `cryptobot-business` → `folder: Business` : alertes **service /
+>   produit** (API 5xx, staleness collecteur, erreur de pipeline, backup obsolète) ;
+> - groupe `cryptobot-technical` → `folder: Technical` : alertes **infra /
+>   système** (container down, disque, CPU/mémoire host, latence p99, Loki,
+>   Tempo, expiration SSL).
+>
+> Les noms `Business` / `Technical` matchent exactement les `folder:` du provider
+> dashboards (`dashboards/dashboards.yml`). Les dossiers sont créés/réutilisés
+> par provisioning : aucune création manuelle nécessaire.
 
 ## Tester l'envoi d'email depuis Grafana
 
@@ -240,26 +246,28 @@ Métriques infra alimentées par le textfile collector de node-exporter
 | `cryptobot_backup_last_success_timestamp_seconds` | `ansible/playbooks/backup.yml` | epoch du dernier backup réussi |
 | `cryptobot_ssl_cert_expiry_timestamp_seconds{domain}` | `ansible/playbooks/ssl.yml` (deploy-hook certbot) | epoch d'expiration du certificat TLS |
 
-## Matrice des alertes infra
+## Matrice des alertes (Business + Technical)
 
 Toutes les règles vivent dans `grafana/provisioning/alerting/alerts.yml`,
 sont évaluées par Grafana et routées vers `cryptobot-email`
-(`policies.yml` → tout vers `cryptobot-email`).
+(`policies.yml` → tout vers `cryptobot-email`). Elles sont rangées dans deux
+dossiers Grafana **existants** (`Business`, `Technical`) — aucun dossier
+`CryptoBot`. La colonne **Dossier** indique l'emplacement de chaque règle.
 
-| Alerte (uid) | Source métrique (job) | Seuil | `for` | Sévérité | Canal |
-|--------------|-----------------------|-------|-------|----------|-------|
-| `alert-5xx-rate` | `http_requests_total` (api) | ratio 5xx > 1 % | 5m | critical | cryptobot-email |
-| `alert-p99-latency` | `http_request_duration_seconds_bucket` (api) | p99 > 1 s | 5m | warning | cryptobot-email |
-| `alert-container-down` | `up{job=~"api\|collector\|frontend\|mlflow"}` | == 0 | 2m | critical | cryptobot-email |
-| `alert-disk-usage` | `node_filesystem_*` (node) | > 80 % | 10m | warning | cryptobot-email |
-| `alert-collector-stale` | `collector_last_success_timestamp_seconds` (collector) | age > 26 h | 15m | critical | cryptobot-email |
-| `alert-collector-errors` | `collector_run_errors_total` (collector) | `increase[1h]` > 0 | 0m | critical | cryptobot-email |
-| `alert-backup-stale` | `cryptobot_backup_last_success_timestamp_seconds` (node) | age > 48 h | 0m | critical | cryptobot-email |
-| `alert-ssl-expiry` | `cryptobot_ssl_cert_expiry_timestamp_seconds` (node) | reste < 14 j | 1h | warning | cryptobot-email |
-| `alert-host-memory` | `node_memory_*` (node) | > 90 % | 10m | warning | cryptobot-email |
-| `alert-host-cpu` | `node_cpu_seconds_total` (node) | > 90 % | 10m | warning | cryptobot-email |
-| `alert-loki-down` | `up{job="loki"}` | == 0 | 5m | warning | cryptobot-email |
-| `alert-tempo-down` | `up{job="tempo"}` | == 0 | 5m | warning | cryptobot-email |
+| Alerte (uid) | Dossier | Groupe | Source métrique (job) | Seuil | `for` | Sévérité | Canal |
+|--------------|---------|--------|-----------------------|-------|-------|----------|-------|
+| `alert-5xx-rate` | Business | `cryptobot-business` | `http_requests_total` (api) | ratio 5xx > 1 % | 5m | critical | cryptobot-email |
+| `alert-collector-stale` | Business | `cryptobot-business` | `collector_last_success_timestamp_seconds` (collector) | age > 26 h | 15m | critical | cryptobot-email |
+| `alert-collector-errors` | Business | `cryptobot-business` | `collector_run_errors_total` (collector) | `increase[1h]` > 0 | 0m | critical | cryptobot-email |
+| `alert-backup-stale` | Business | `cryptobot-business` | `cryptobot_backup_last_success_timestamp_seconds` (node) | age > 48 h | 0m | critical | cryptobot-email |
+| `alert-p99-latency` | Technical | `cryptobot-technical` | `http_request_duration_seconds_bucket` (api) | p99 > 1 s | 5m | warning | cryptobot-email |
+| `alert-container-down` | Technical | `cryptobot-technical` | `up{job=~"api\|collector\|frontend\|mlflow"}` | == 0 | 2m | critical | cryptobot-email |
+| `alert-disk-usage` | Technical | `cryptobot-technical` | `node_filesystem_*` (node) | > 80 % | 10m | warning | cryptobot-email |
+| `alert-ssl-expiry` | Technical | `cryptobot-technical` | `cryptobot_ssl_cert_expiry_timestamp_seconds` (node) | reste < 14 j | 1h | warning | cryptobot-email |
+| `alert-host-memory` | Technical | `cryptobot-technical` | `node_memory_*` (node) | > 90 % | 10m | warning | cryptobot-email |
+| `alert-host-cpu` | Technical | `cryptobot-technical` | `node_cpu_seconds_total` (node) | > 90 % | 10m | warning | cryptobot-email |
+| `alert-loki-down` | Technical | `cryptobot-technical` | `up{job="loki"}` | == 0 | 5m | warning | cryptobot-email |
+| `alert-tempo-down` | Technical | `cryptobot-technical` | `up{job="tempo"}` | == 0 | 5m | warning | cryptobot-email |
 
 `alert-disk-usage` existait mais était inerte (aucune cible `node-exporter`
 scrappée) ; l'ajout du service `node-exporter` + job Prometheus `node` la rend
