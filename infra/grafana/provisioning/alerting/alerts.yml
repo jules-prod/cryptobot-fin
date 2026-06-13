@@ -550,3 +550,109 @@ groups:
           summary: 'Tempo (tracing backend) is down (up < 1)'
         labels:
           severity: warning
+      - uid: alert-backup-stale
+        title: Backup — last successful backup too old
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: 'time() - max(cryptobot_backup_last_success_timestamp_seconds)'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 93600
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: B
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 15m
+        annotations:
+          summary: 'No successful backup in >26h'
+          description: 'Âge du dernier backup : {{ $values.A }} s'
+        labels:
+          severity: critical
+      - uid: alert-ssl-expiry
+        title: SSL certificate expiring soon (<14 days)
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: 'cryptobot_ssl_cert_expiry_timestamp_seconds - time()'
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1209600
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: B
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 1h
+        annotations:
+          summary: 'TLS certificate for {{ $labels.domain }} expires in <14 days'
+          description: 'Temps avant expiration : {{ $values.A }} s'
+        labels:
+          severity: warning

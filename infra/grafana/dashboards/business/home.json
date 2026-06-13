@@ -428,12 +428,13 @@
       "id": 16
     },
     {
-      "title": "Active Alerts",
+      "title": "Statut des règles d'alerte (toutes)",
       "type": "alertlist",
       "id": 17,
+      "description": "Toutes les règles d'alerte provisionnées et leur état courant (vert = sain). Jamais vide.",
       "gridPos": {
-        "h": 8,
-        "w": 24,
+        "h": 9,
+        "w": 12,
         "x": 0,
         "y": 16
       },
@@ -443,16 +444,40 @@
         "dashboardAlerts": false,
         "groupBy": [],
         "groupMode": "default",
-        "maxItems": 20,
+        "maxItems": 30,
         "nameFilter": "",
-        "sortOrder": 1,
+        "sortOrder": 3,
         "stateFilter": {
           "error": true,
           "firing": true,
-          "noData": false,
-          "normal": false,
+          "noData": true,
+          "normal": true,
           "pending": true
         }
+      }
+    },
+    {
+      "title": "Historique des alertes (déclenchements → emails envoyés)",
+      "type": "annolist",
+      "id": 19,
+      "description": "Transitions d'état des règles (Normal ⇄ Alerting). Chaque passage en Alerting routé par la notification policy déclenche un email vers cryptobot-email.",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "options": {
+        "onlyFromThisDashboard": false,
+        "onlyInTimeRange": false,
+        "tags": [],
+        "limit": 20,
+        "showTags": false,
+        "showUser": false,
+        "showTime": true,
+        "navigateBefore": "10m",
+        "navigateAfter": "10m",
+        "navigateToPanel": true
       }
     },
     {
@@ -463,7 +488,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 25
       },
       "datasource": {
         "type": "prometheus",
