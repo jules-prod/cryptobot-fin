@@ -9,7 +9,7 @@ services:
     # seule). MLFLOW_TRACKING_* restent dans .env (consommés par nginx htpasswd via
     # Ansible) mais ne sont plus lus par le conteneur mlflow.
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/mlflow/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]  # 2.x: /health (pas /mlflow/health)
       interval: 30s
       timeout: 10s
       start_period: 30s
@@ -31,12 +31,12 @@ services:
     env_file: .env
     environment:
       CRYPTO_BOT_DB_URL: sqlite:///data/processed/crypto_data.db
-      # Tracking via le SERVEUR MLflow. ⚠️ Le serveur tourne avec --static-prefix
-      # /mlflow : son API REST est sous http://mlflow:5000/mlflow. SANS le préfixe,
-      # le client tape /api/2.0/... → 404 (get-by-name) → runs silencieusement perdus.
-      # AVEC le préfixe, le serveur range runs + artefacts sous /mlflow/artifacts
-      # (volume mlflow-data partagé, servi par l'UI), jamais dans le FS éphémère client.
-      MLFLOW_TRACKING_URI: http://mlflow:5000/mlflow
+      # Tracking via le SERVEUR MLflow (2.x). ⚠️ En MLflow 2.x, --static-prefix /mlflow
+      # ne s'applique QU'À l'UI + ajax-api (navigateur) : l'API REST client reste à la
+      # RACINE (/api/2.0/...). Le client DOIT donc utiliser http://mlflow:5000 SANS /mlflow
+      # (un /mlflow ici → 404 → runs perdus). Le serveur range runs + artefacts sous
+      # --default-artifact-root /mlflow/artifacts (volume mlflow-data partagé, servi par l'UI).
+      MLFLOW_TRACKING_URI: http://mlflow:5000
     ports:
       - "8000:8000"
     volumes:
@@ -83,8 +83,8 @@ services:
     environment:
       CRYPTO_BOT_DB_URL: sqlite:///data/processed/crypto_data.db
       CRYPTO_BOT_SCHEDULE_TIME: "08:00"
-      # Même serveur MLflow que l'api — préfixe /mlflow obligatoire (cf. service api).
-      MLFLOW_TRACKING_URI: http://mlflow:5000/mlflow
+      # Même serveur MLflow que l'api (2.x : URI client SANS /mlflow — cf. service api).
+      MLFLOW_TRACKING_URI: http://mlflow:5000
     volumes:
       - ./data:/app/data
     networks:
