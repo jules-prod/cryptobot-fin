@@ -8,7 +8,7 @@ import threading
 from logger_settings import logger
 from config.settings import config
 from src.collectors.ohlcv_collector import OHLCVCollector
-from src.notifications.notifier import notify_collect_start, notify_collect_end, notify_collect_error
+from src.metrics import record_collection_start, record_collection_success, record_collection_error
 
 
 class OHLCVScheduler:
@@ -41,20 +41,20 @@ class OHLCVScheduler:
         collector = OHLCVCollector(self.pairs, normalized_timeframes, exchange)
         return collector.fetch_and_store() or {}
 
-    def _ohlcv_collection_with_alerts(self, exchange: str, trigger: str = "planifié") -> None:
-        """Collecte OHLCV avec alertes email début/fin/erreur."""
+    def _ohlcv_collection_with_metrics(self, exchange: str, trigger: str = "planifié") -> None:
+        """Collecte OHLCV avec métriques Prometheus (santé exposée pour Grafana)."""
         import time as _time
-        notify_collect_start([exchange], trigger=trigger)
+        record_collection_start()
         t0 = _time.monotonic()
         try:
             logger.info(f"Début de la collecte OHLCV — {exchange} ({trigger})")
             summary = self._ohlcv_collection(exchange)
             duration = _time.monotonic() - t0
             logger.info(f"✅ Collecte OHLCV {exchange} terminée en {duration:.0f}s")
-            notify_collect_end([exchange], summary, duration)
+            record_collection_success(summary.get("total_loaded_rows", 0))
         except Exception as e:
             logger.error(f"❌ Échec de la collecte OHLCV {exchange}: {e}")
-            notify_collect_error(str(e))
+            record_collection_error(trigger)
             raise
 
     def start(self) -> None:
@@ -74,7 +74,7 @@ class OHLCVScheduler:
             # Planification de la tâche quotidienne pour chaque exchange
             for exchange in self.exchanges:
                 schedule.every().day.at(self.schedule_time).do(
-                    lambda ex=exchange: self._ohlcv_collection_with_alerts(ex, trigger=f"planifié ({self.schedule_time})")
+                    lambda ex=exchange: self._ohlcv_collection_with_metrics(ex, trigger=f"planifié ({self.schedule_time})")
                 )
 
             self.running = True
@@ -130,10 +130,8 @@ class OHLCVScheduler:
             raise
 
     def run_once(self) -> None:
-        """Exécute une collecte immédiate OHLCV — 1 email start + 1 email end pour tous les exchanges."""
-        import time as _time
-        notify_collect_start(self.exchanges, trigger="manuel")
-        t0 = _time.monotonic()
+        """Exécute une collecte immédiate OHLCV pour tous les exchanges (métriques Prometheus)."""
+        record_collection_start()
         combined: dict = {"total_raw_rows": 0, "total_loaded_rows": 0,
                           "total_symbols": 0, "successful": 0, "failed": 0}
         last_error: str = ""
@@ -148,6 +146,6 @@ class OHLCVScheduler:
                 combined["failed"] += 1
                 last_error = str(e)
         if combined["failed"] == len(self.exchanges) and last_error:
-            notify_collect_error(last_error)
+            record_collection_error("manuel")
         else:
-            notify_collect_end(self.exchanges, combined, _time.monotonic() - t0)
+            record_collection_success(combined["total_loaded_rows"])

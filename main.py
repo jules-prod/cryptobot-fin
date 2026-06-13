@@ -2,14 +2,13 @@ import argparse
 import os
 import signal
 import time
-import threading
 import subprocess
 from logger_settings import logger
 from config.settings import config
 from src.schedulers.scheduler_ohlcv import OHLCVScheduler
 from src.schedulers.scheduler_ticker import TickerScheduler
 from src.schedulers.scheduler_market_data import MarketDataScheduler
-from src.notifications.notifier import notify_collect_start, notify_collect_end, notify_collect_error
+from src.metrics import record_collection_start, record_collection_success, record_collection_error
 
 
 def run_collection_once():
@@ -156,11 +155,10 @@ def run_scheduled_collection():
             time.sleep(3600)
 
     except KeyboardInterrupt:
-        logger.info("Arrêt demandé (SIGTERM/CTRL+C)")
-        notify_collect_end(config.get("exchanges"), {}, 0)
+        logger.info("Collecteur arrêté proprement (SIGTERM/CTRL+C)")
     except Exception as e:
         logger.error(f"❌ Erreur fatale dans la collecte planifiée: {e}")
-        notify_collect_error(str(e))
+        record_collection_error("planifié")
         raise
     finally:
         # Exécuter le script de vérification de la base de données
@@ -227,7 +225,7 @@ def parse_arguments():
 def _handle_sigterm(signum, frame):
     raise KeyboardInterrupt()
 
-# SIGTERM (docker compose down) → arrêt propre avec notification email
+# SIGTERM (docker compose down) → arrêt propre du collecteur
 signal.signal(signal.SIGTERM, _handle_sigterm)
 
 
@@ -250,17 +248,15 @@ if __name__ == "__main__":
         # Mode planifié
         run_scheduled_collection()
     elif args.ticker:
-        # Mode ticker seul — 1 email start + 1 email end (pas un par exchange)
-        exchanges = config.get("exchanges")
+        # Mode ticker seul — métriques Prometheus exposées pour Grafana
         runtime = config.get("ticker.runtime", 60)
-        notify_collect_start(exchanges, trigger=f"ticker temps réel ({runtime} min)")
-        t0 = time.monotonic()
+        record_collection_start()
         try:
             ticker_scheduler = TickerScheduler()
             ticker_scheduler.run_once(runtime)
-            notify_collect_end(exchanges, {}, time.monotonic() - t0)
-        except Exception as e:
-            notify_collect_error(str(e))
+            record_collection_success(0)
+        except Exception:
+            record_collection_error("ticker")
             raise
     else:
         # Mode exécution unique OHLCV

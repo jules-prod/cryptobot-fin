@@ -63,4 +63,4 @@ smtp_host: "{{ lookup('env', 'SMTP_HOST') | default('smtp.gmail.com:587', true) 
 smtp_user: "{{ lookup('env', 'SMTP_USER') | default('', true) | trim }}"
 smtp_password: "{{ lookup('env', 'SMTP_PASSWORD') | default('', true) | trim }}"
 smtp_from: "{{ lookup('env', 'SMTP_FROM') | default('', true) | trim }}"
-alert_email_to: "{{ lookup('env', 'ALERT_EMAIL_TO') | default('', true) | trim }}"
+alert_email_to: "{{ lookup('env', 'ALERT_EMAIL_TO') | default('douirx@gmail.com', true) | trim }}"

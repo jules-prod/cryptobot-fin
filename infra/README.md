@@ -131,3 +131,130 @@ nmap -p 5001 dtsc-cryptobot.fr   # closed/filtered
 # Sur le VPS : healthcheck non authentifié
 curl -f http://127.0.0.1:5001/mlflow/health
 ```
+
+
+---
+
+## Alerting — couche technique (Prometheus + Grafana)
+
+CryptoBot sépare deux couches d'alerting :
+
+- **Couche métier (app)** — emails adressés à un abonné précis (confirmation
+  d'inscription / désabonnement). Reste dans `src/notifications/notifier.py`.
+- **Couche technique (infra)** — santé opérationnelle (collecte, host, backup,
+  SSL, briques d'observabilité). Vit dans Prometheus + Grafana et route les
+  alertes vers le contact `cryptobot-email` (`${ALERT_EMAIL_TO}`, destinataire
+  par défaut `douirx@gmail.com` — overridable via la variable d'env / secret GH).
+
+## Migration : ce qui a quitté le code app → où c'est parti
+
+| Avant (app, `notifier.py`) | Nature | Après |
+|----------------------------|--------|-------|
+| `notify_collect_start()` | opérationnel | supprimé — `record_collection_start()` met à jour `collector_last_run_timestamp_seconds` |
+| `notify_collect_end()` | opérationnel | supprimé — `record_collection_success(loaded)` met à jour `collector_last_success_timestamp_seconds` + `collector_last_candles_loaded` |
+| `notify_collect_error()` | opérationnel | supprimé — `record_collection_error(trigger)` incrémente `collector_run_errors_total` |
+| « 0 bougie insérée » (warning inline) | opérationnel | gauge `collector_last_candles_loaded` + panneau dashboard *Collector & Backups* |
+| `_get_subscriber_emails()` / `_recipients()` (broadcast collecte) | opérationnel | supprimé (plus de broadcast de santé par email) |
+| `notify_subscribe_confirmation()` | **métier** | **conservé** dans l'app |
+| `notify_unsubscribe_confirmation()` | **métier** | **conservé** dans l'app |
+
+Appelants mis à jour : `main.py`, `src/schedulers/scheduler_ohlcv.py`
+(émettent désormais des métriques au lieu d'emails). Les routes
+`api/routers/alerts.py` (abonnés) sont inchangées.
+
+## Métriques ajoutées (côté app — `src/metrics.py`)
+
+Exposées sur `/metrics` (API :8000, collector :8001), scrapées par Prometheus.
+
+| Métrique | Type | Sémantique |
+|----------|------|-----------|
+| `collector_last_success_timestamp_seconds` | Gauge | epoch de la dernière collecte réussie |
+| `collector_last_run_timestamp_seconds` | Gauge | epoch de la dernière tentative |
+| `collector_last_candles_loaded` | Gauge | bougies insérées au dernier run (`0` = déjà à jour) |
+| `collector_run_errors_total` | Counter (`trigger`) | erreurs de pipeline non gérées |
+
+Métriques infra alimentées par le textfile collector de node-exporter
+(`/var/lib/node_exporter/textfile/*.prom`), écrites par les playbooks Ansible :
+
+| Métrique | Écrite par | Sémantique |
+|----------|-----------|-----------|
+| `cryptobot_backup_last_success_timestamp_seconds` | `ansible/playbooks/backup.yml` | epoch du dernier backup réussi |
+| `cryptobot_ssl_cert_expiry_timestamp_seconds{domain}` | `ansible/playbooks/ssl.yml` (deploy-hook certbot) | epoch d'expiration du certificat TLS |
+
+## Matrice des alertes infra
+
+Toutes les règles vivent dans `grafana/provisioning/alerting/alerts.yml`,
+sont évaluées par Grafana et routées vers `cryptobot-email`
+(`policies.yml` → tout vers `cryptobot-email`).
+
+| Alerte (uid) | Source métrique (job) | Seuil | `for` | Sévérité | Canal |
+|--------------|-----------------------|-------|-------|----------|-------|
+| `alert-5xx-rate` | `http_requests_total` (api) | ratio 5xx > 1 % | 5m | critical | cryptobot-email |
+| `alert-p99-latency` | `http_request_duration_seconds_bucket` (api) | p99 > 1 s | 5m | warning | cryptobot-email |
+| `alert-container-down` | `up{job=~"api\|collector\|frontend\|mlflow"}` | == 0 | 2m | critical | cryptobot-email |
+| `alert-disk-usage` | `node_filesystem_*` (node) | > 80 % | 10m | warning | cryptobot-email |
+| `alert-collector-stale` | `collector_last_success_timestamp_seconds` (collector) | age > 26 h | 15m | critical | cryptobot-email |
+| `alert-collector-errors` | `collector_run_errors_total` (collector) | `increase[1h]` > 0 | 0m | critical | cryptobot-email |
+| `alert-backup-stale` | `cryptobot_backup_last_success_timestamp_seconds` (node) | age > 48 h | 0m | critical | cryptobot-email |
+| `alert-ssl-expiry` | `cryptobot_ssl_cert_expiry_timestamp_seconds` (node) | reste < 14 j | 1h | warning | cryptobot-email |
+| `alert-host-memory` | `node_memory_*` (node) | > 90 % | 10m | warning | cryptobot-email |
+| `alert-host-cpu` | `node_cpu_seconds_total` (node) | > 90 % | 10m | warning | cryptobot-email |
+| `alert-loki-down` | `up{job="loki"}` | == 0 | 5m | warning | cryptobot-email |
+| `alert-tempo-down` | `up{job="tempo"}` | == 0 | 5m | warning | cryptobot-email |
+
+`alert-disk-usage` existait mais était inerte (aucune cible `node-exporter`
+scrappée) ; l'ajout du service `node-exporter` + job Prometheus `node` la rend
+fonctionnelle, en plus de CPU/mémoire host.
+
+### Jobs Prometheus scrappés
+
+`prometheus`, `api`, `collector`, `otel-collector`, `nginx`, **`node`** (nouveau),
+**`loki`** (nouveau), **`tempo`** (nouveau).
+
+## Points non implémentés (documentés)
+
+- **DB indisponible (`pg_up`)** — non applicable : la base est **SQLite**
+  (fichier `data/processed/crypto_data.db`), pas un serveur Postgres. Il n'y a
+  ni `postgres-exporter` ni `pg_up`. Une panne de la base se manifeste
+  indirectement via `alert-collector-errors` (pipeline en échec) et
+  `alert-container-down` (api/collector). À ré-évaluer si une migration
+  TimescaleDB/Postgres a lieu (cf. roadmap Phase 4.3).
+- **MLflow down** — `mlflow` n'expose pas `/metrics` et n'est pas scrappé.
+  `alert-container-down` cite `job="mlflow"` mais aucune série n'existe pour ce
+  label aujourd'hui (couverture effective : `api`+`collector`). Couvrir MLflow
+  proprement nécessiterait un `blackbox-exporter` sondant `/health` — non
+  déployé.
+- **Prometheus down** — une instance Prometheus ne peut pas s'alerter
+  elle-même. Nécessiterait une sonde externe (Alertmanager deadman / heartbeat
+  tiers) — hors périmètre de ce stack mono-hôte.
+
+## Flux d'alerting opérationnel (après migration)
+
+```plantuml
+@startuml
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam componentStyle rectangle
+
+component "Collector\n(main.py --schedule)" as collector
+component "src/metrics.py\nGauges + Counter" as metrics
+component "Prometheus\n(scrape /metrics, node, loki, tempo)" as prom
+component "node-exporter\ntextfile collector" as nodeexp
+component "Grafana\nalert rules" as grafana
+component "Contact point\ncryptobot-email" as contact
+actor "Ops (ALERT_EMAIL_TO)" as ops
+
+collector --> metrics : record_collection_*()
+metrics --> prom : /metrics :8001
+nodeexp --> prom : backup / ssl / host
+prom --> grafana : datasource
+grafana --> contact : alerte déclenchée
+contact --> ops : email SMTP
+
+note bottom of metrics
+  Remplace notify_collect_start/end/error.
+  Les emails *abonnés* (subscribe/unsubscribe)
+  restent dans notifier.py (couche métier).
+end note
+@enduml
+```

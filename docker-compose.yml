@@ -153,6 +153,18 @@ services:
       - --nginx.scrape-uri=http://127.0.0.1:8080/nginx_status
       - --web.listen-address=:9113
 
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    restart: unless-stopped
+    command:
+      - --path.rootfs=/host
+      - --collector.textfile.directory=/var/lib/node_exporter/textfile
+    volumes:
+      - /:/host:ro,rslave
+      - /var/lib/node_exporter/textfile:/var/lib/node_exporter/textfile:ro
+    networks:
+      - crypto-net
+
   grafana:
     build:
       context: infra/grafana
