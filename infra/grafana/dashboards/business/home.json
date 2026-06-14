@@ -178,13 +178,14 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(candles_ingested_total[24h]))",
+          "expr": "(sum(increase(candles_ingested_total[24h]))) or vector(0)",
           "legendFormat": "candles"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
+          "unit": "short",
+          "noValue": "0"
         },
         "overrides": []
       }
@@ -205,13 +206,14 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(signals_computed_total[24h]))",
+          "expr": "(sum(increase(signals_computed_total[24h]))) or vector(0)",
           "legendFormat": "signals"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
+          "unit": "short",
+          "noValue": "0"
         },
         "overrides": []
       }
@@ -232,13 +234,14 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(news_collected_total[24h]))",
+          "expr": "(sum(increase(news_collected_total[24h]))) or vector(0)",
           "legendFormat": "news"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
+          "unit": "short",
+          "noValue": "0"
         },
         "overrides": []
       }
@@ -259,13 +262,14 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(etl_duration_seconds_count[24h]))",
+          "expr": "(sum(increase(etl_duration_seconds_count[24h]))) or vector(0)",
           "legendFormat": "ETL runs"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
+          "unit": "short",
+          "noValue": "0"
         },
         "overrides": []
       }

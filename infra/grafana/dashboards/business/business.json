@@ -66,7 +66,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(increase(news_collected_total[24h]))",
+          "expr": "(sum(increase(news_collected_total[24h]))) or vector(0)",
           "legendFormat": "articles (24h)",
           "refId": "A"
         }
@@ -74,6 +74,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
+          "noValue": "0",
           "thresholds": {
             "mode": "absolute",
             "steps": [{ "color": "orange", "value": null }]
@@ -92,7 +93,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(increase(etl_duration_seconds_count[1h]))",
+          "expr": "(sum(increase(etl_duration_seconds_count[1h]))) or vector(0)",
           "legendFormat": "etl runs",
           "refId": "A"
         }
@@ -100,6 +101,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
+          "noValue": "0",
           "thresholds": {
             "mode": "absolute",
             "steps": [{ "color": "green", "value": null }]
@@ -164,7 +166,7 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "short" },
+        "defaults": { "unit": "short", "noValue": "0" },
         "overrides": []
       },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "horizontal", "displayMode": "gradient", "valueMode": "color" }

@@ -131,7 +131,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(increase(signals_computed_total[24h]))",
+          "expr": "(sum(increase(signals_computed_total[24h]))) or vector(0)",
           "legendFormat": "signals",
           "refId": "A"
         }
@@ -139,6 +139,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
+          "noValue": "0",
           "thresholds": {
             "mode": "absolute",
             "steps": [{ "color": "purple", "value": null }]

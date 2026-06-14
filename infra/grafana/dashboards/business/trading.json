@@ -250,6 +250,7 @@
           "decimals": 1,
           "min": 0,
           "max": 100,
+          "noValue": "0",
           "color": {
             "mode": "thresholds"
           },
@@ -541,6 +542,7 @@
         "defaults": {
           "unit": "currencyUSD",
           "decimals": 2,
+          "noValue": "0",
           "color": {
             "mode": "thresholds"
           },
