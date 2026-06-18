@@ -25,9 +25,13 @@ Sharpe ratio, win rate, PnL cumulé, drawdown max, profit factor, comparaison vs
 Chaque backtest est tracé automatiquement (paramètres, métriques, artifacts).
 
 ```bash
-make mlflow     # Lance MLflow seul → http://localhost:5001
-make run-all    # Lance API + MLflow + Streamlit ensemble
-make docker     # MLflow inclus dans la stack Docker
+# MLflow seul → http://localhost:5001
+mlflow server --host 0.0.0.0 --port 5001 \
+  --backend-store-uri sqlite:///mlflow-local.db \
+  --default-artifact-root ./mlflow-artifacts --allowed-hosts "*"
+
+# MLflow inclus dans la stack Docker
+docker compose up --build
 ```
 
 Stockage local : `mlflow-local.db` (backend SQLite) + `mlflow-artifacts/`.
