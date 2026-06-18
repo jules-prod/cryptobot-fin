@@ -11,7 +11,7 @@ import shutil
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Ne pas importer get_db_engine ici pour éviter l'exécution au niveau du module
-import logger_settings
+from src import logger_settings
 logger = logger_settings.logger
 
 def reset_database():

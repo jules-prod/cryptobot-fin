@@ -11,9 +11,9 @@ if _ROOT not in sys.path:
 
 import streamlit as st
 
-from frontend.api_client import APIClient
-from frontend.components.news_feed import render_news_feed, render_sentiment_summary
-from frontend.i18n import t
+from src.frontend.api_client import APIClient
+from src.frontend.components.news_feed import render_news_feed, render_sentiment_summary
+from src.frontend.i18n import t
 
 _client = APIClient()
 

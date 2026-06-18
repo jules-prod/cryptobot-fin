@@ -8,7 +8,7 @@ import json
 import yaml
 from typing import Dict, Any, List, Optional
 from pathlib import Path
-from logger_settings import logger
+from src.logger_settings import logger
 
 
 class Config:
@@ -76,7 +76,7 @@ class Config:
 
     def _load_config_file(self) -> Dict[str, Any]:
         """Charge la configuration depuis le fichier (YAML ou JSON)"""
-        config_dir = Path("config")
+        config_dir = Path(__file__).resolve().parent
         yaml_file = config_dir / "config.yaml"
         json_file = config_dir / "config.json"
 
@@ -250,7 +250,7 @@ class Config:
         """Sauvegarder la configuration actuelle dans un fichier"""
         try:
             # Créer le dossier config s'il n'existe pas
-            config_dir = Path("config")
+            config_dir = Path(__file__).resolve().parent
             config_dir.mkdir(exist_ok=True)
 
             full_path = Path(file_path)

@@ -8,16 +8,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect, text
 
-from api.routers import health, ohlcv, market, signals, news, ml, alerts, paper_trading
-from api.dependencies import engine
-from api.observability import setup_observability
+from src.api.routers import health, ohlcv, market, signals, news, ml, alerts, paper_trading
+from src.api.dependencies import engine
+from src.api.observability import setup_observability
 from src.models.ohlcv import Base as OHLCVBase
 from src.models.ticker import Base as TickerBase
 from src.models.market_data_base import MarketDataBase
 from src.models.news import Base as NewsBase
 from src.models.alert_subscriber import Base as AlertBase
 from src.models.paper_trade import Base as PaperTradeBase
-from config.settings import config
+from src.config.settings import config
 
 # Create all tables if they don't exist yet (idempotent — works on SQLite and PostgreSQL)
 OHLCVBase.metadata.create_all(bind=engine)

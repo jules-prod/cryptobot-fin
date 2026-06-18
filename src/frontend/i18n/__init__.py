@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from frontend.i18n.fr import TRANSLATIONS
+from src.frontend.i18n.fr import TRANSLATIONS
 
 
 def t(key: str, **kwargs: object) -> str:

@@ -16,10 +16,10 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from frontend.api_client import APIClient
-from frontend.components.candlestick import _DARK_LAYOUT
-from frontend.config import frontend_settings
-from frontend.i18n import t
+from src.frontend.api_client import APIClient
+from src.frontend.components.candlestick import _DARK_LAYOUT
+from src.frontend.config import frontend_settings
+from src.frontend.i18n import t
 
 logger = logging.getLogger(__name__)
 

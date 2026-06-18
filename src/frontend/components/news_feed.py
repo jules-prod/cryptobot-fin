@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 import streamlit as st
 
-from frontend.i18n import t
+from src.frontend.i18n import t
 
 _LABEL_COLORS = {
     "positive": "#22c55e",

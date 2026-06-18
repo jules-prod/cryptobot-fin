@@ -8,8 +8,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 import plotly.graph_objects as go
 
-from frontend.components.candlestick import render_candlestick, _compute_macd_crosses
-from frontend.components.indicators import (
+from src.frontend.components.candlestick import render_candlestick, _compute_macd_crosses
+from src.frontend.components.indicators import (
     _rsi_label,
     _bb_position_label,
     _macd_label,

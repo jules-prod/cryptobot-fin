@@ -12,9 +12,9 @@ if _ROOT not in sys.path:
 import plotly.graph_objects as go
 import streamlit as st
 
-from frontend.api_client import APIClient
-from frontend.config import frontend_settings
-from frontend.i18n import t
+from src.frontend.api_client import APIClient
+from src.frontend.config import frontend_settings
+from src.frontend.i18n import t
 
 _client = APIClient()
 

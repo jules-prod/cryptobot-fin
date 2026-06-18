@@ -8,8 +8,8 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional, List
 
-from api.dependencies import get_db
-from api.schemas.signals import SignalResponse
+from src.api.dependencies import get_db
+from src.api.schemas.signals import SignalResponse
 from src.models.ohlcv import OHLCV
 from src.analytics.technical_calculator import TechnicalCalculator
 from src.analytics.technical_signals import TechnicalSignals

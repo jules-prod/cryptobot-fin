@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import TimeSeriesSplit
 
-from logger_settings import logger
+from src.logger_settings import logger
 
 # Colonnes brutes / méta à exclure de X
 _META_COLUMNS = {

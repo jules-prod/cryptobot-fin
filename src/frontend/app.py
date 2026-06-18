@@ -15,9 +15,9 @@ if _ROOT not in sys.path:
 
 import streamlit as st
 
-from frontend.api_client import APIClient
-from frontend.config import frontend_settings
-from frontend.i18n import t
+from src.frontend.api_client import APIClient
+from src.frontend.config import frontend_settings
+from src.frontend.i18n import t
 
 logging.basicConfig(
     level=getattr(logging, frontend_settings.log_level, logging.INFO),

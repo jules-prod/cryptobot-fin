@@ -21,9 +21,9 @@ try:
 except ImportError:
     _HAS_AUTOREFRESH = False
 
-from frontend.api_client import APIClient
-from frontend.config import frontend_settings
-from frontend.utils import extract_symbols, fmt_ts
+from src.frontend.api_client import APIClient
+from src.frontend.config import frontend_settings
+from src.frontend.utils import extract_symbols, fmt_ts
 
 # ── Constantes ────────────────────────────────────────────────────────────────
 

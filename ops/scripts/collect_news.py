@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from api.dependencies import SessionLocal, engine
+from src.api.dependencies import SessionLocal, engine
 from src.collectors.news_collector import NewsCollector
 from src.models.news import Base as NewsBase
 

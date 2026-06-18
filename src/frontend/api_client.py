@@ -11,7 +11,7 @@ from typing import Any
 
 import httpx
 
-from frontend.config import frontend_settings
+from src.frontend.config import frontend_settings
 
 logger = logging.getLogger(__name__)
 

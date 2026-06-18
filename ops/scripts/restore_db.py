@@ -16,8 +16,8 @@ from pathlib import Path
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config.settings import config
-from logger_settings import logger
+from src.config.settings import config
+from src.logger_settings import logger
 
 Path("logs").mkdir(parents=True, exist_ok=True)
 Path("data/backups").mkdir(parents=True, exist_ok=True)

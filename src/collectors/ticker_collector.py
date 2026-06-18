@@ -9,8 +9,8 @@ import threading
 import uuid
 from datetime import datetime, timedelta
 from typing import Dict, List
-from logger_settings import logger
-from config.settings import config
+from src.logger_settings import logger
+from src.config.settings import config
 from src.services.db_context import database_transaction
 from src.models.ticker import TickerSnapshot
 from src.services.db import get_db_engine

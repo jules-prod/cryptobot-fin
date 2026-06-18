@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict
 
-from api.dependencies import get_db
-from api.schemas.paper_trading import (
+from src.api.dependencies import get_db
+from src.api.schemas.paper_trading import (
     PortfolioCreate,
     PortfolioResponse,
     OrderCreate,

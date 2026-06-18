@@ -8,7 +8,7 @@ from typing import Any
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from frontend.i18n import t
+from src.frontend.i18n import t
 
 logger = logging.getLogger(__name__)
 

@@ -3,8 +3,8 @@ import os
 import signal
 import time
 import subprocess
-from logger_settings import logger
-from config.settings import config
+from src.logger_settings import logger
+from src.config.settings import config
 from src.schedulers.scheduler_ohlcv import OHLCVScheduler
 from src.schedulers.scheduler_ticker import TickerScheduler
 from src.schedulers.scheduler_market_data import MarketDataScheduler

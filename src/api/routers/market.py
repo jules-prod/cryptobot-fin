@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import Optional, List
 
-from api.dependencies import get_db
+from src.api.dependencies import get_db
 from src.collectors.fear_greed_collector import FearGreedCollector
-from api.schemas.market import (
+from src.api.schemas.market import (
     TopCryptoSnapshotResponse,
     TopCryptoResponse,
     GlobalMarketResponse,

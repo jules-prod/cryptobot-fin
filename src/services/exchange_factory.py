@@ -8,7 +8,7 @@ from src.services.exchanges_api.binance_client import BinanceClient
 from src.services.exchanges_api.kraken_client import KrakenClient
 from src.services.exchanges_api.coinbase_client import CoinbaseClient
 from src.services.exchanges_api.coingecko_client import CoinGeckoClient
-from logger_settings import logger
+from src.logger_settings import logger
 from typing import Union
 
 

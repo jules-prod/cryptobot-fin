@@ -5,7 +5,7 @@ Ce module fournit une interface pour interagir avec l'API Coinbase Advanced Trad
 """
 
 import ccxt
-from logger_settings import logger
+from src.logger_settings import logger
 
 
 class CoinbaseClient:

@@ -10,8 +10,8 @@ from sqlalchemy import nullslast
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from api.dependencies import get_db
-from api.schemas.news import NewsArticleResponse, NewsSentimentResponse
+from src.api.dependencies import get_db
+from src.api.schemas.news import NewsArticleResponse, NewsSentimentResponse
 from src.models.news import NewsArticle
 
 router = APIRouter(prefix="/news", tags=["news"])

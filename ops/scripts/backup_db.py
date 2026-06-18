@@ -17,7 +17,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Importer le logger centralisé
 import logging
-from logger_settings import logger
+from src.logger_settings import logger
 
 # Configuration
 BACKUP_DIR = "data/backups"
@@ -29,7 +29,7 @@ class DatabaseBackup:
 
     def __init__(self):
         """Initialise la connexion à la base de données."""
-        from config.settings import config
+        from src.config.settings import config
 
         self.db_url = config.get("database.url")
         self.engine = create_engine(self.db_url)

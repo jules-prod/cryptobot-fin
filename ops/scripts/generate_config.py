@@ -5,8 +5,8 @@ Permet de créer config.yaml ou config.json avec les valeurs par défaut.
 """
 
 import argparse
-from config.settings import Config
-from logger_settings import logger
+from src.config.settings import Config
+from src.logger_settings import logger
 
 
 def main():
@@ -32,9 +32,9 @@ def main():
 
     # Déterminer le format de sortie
     if args.format == "json":
-        output_file = args.output if args.output.endswith(".json") else "config/config.json"
+        output_file = args.output if args.output.endswith(".json") else "src/config/config.json"
     else:
-        output_file = args.output if args.output.endswith(".yaml") else "config/config.yaml"
+        output_file = args.output if args.output.endswith(".yaml") else "src/config/config.yaml"
 
     # Sauvegarder la configuration
     success = config.save_to_file(output_file)

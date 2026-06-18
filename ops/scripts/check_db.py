@@ -12,7 +12,7 @@ project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_root)
 
 from src.analytics.db_inspector import DBInspector
-import logger_settings
+from src import logger_settings
 
 logger = logger_settings.logger
 

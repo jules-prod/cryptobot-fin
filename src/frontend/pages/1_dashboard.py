@@ -14,12 +14,12 @@ if _ROOT not in sys.path:
 import pandas as pd
 import streamlit as st
 
-from frontend.api_client import APIClient
-from frontend.components.candlestick import render_candlestick
-from frontend.components.indicators import render_indicator_summary
-from frontend.config import frontend_settings
-from frontend.i18n import t
-from frontend.utils import extract_symbols, extract_timeframes, fmt_ts
+from src.frontend.api_client import APIClient
+from src.frontend.components.candlestick import render_candlestick
+from src.frontend.components.indicators import render_indicator_summary
+from src.frontend.config import frontend_settings
+from src.frontend.i18n import t
+from src.frontend.utils import extract_symbols, extract_timeframes, fmt_ts
 
 logger = logging.getLogger(__name__)
 

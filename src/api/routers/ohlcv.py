@@ -4,8 +4,8 @@ from sqlalchemy import func
 from typing import Optional, List
 from datetime import datetime
 
-from api.dependencies import get_db
-from api.schemas.ohlcv import OHLCVResponse, SymbolInfo
+from src.api.dependencies import get_db
+from src.api.schemas.ohlcv import OHLCVResponse, SymbolInfo
 from src.models.ohlcv import OHLCV
 
 router = APIRouter(prefix="/ohlcv", tags=["ohlcv"])

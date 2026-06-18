@@ -5,7 +5,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
-from config.settings import config
+from src.config.settings import config
 
 DATABASE_URL = config.get("database.url")
 

@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from api.observability import setup_observability
+from src.api.observability import setup_observability
 
 
 def test_metrics_endpoint_exists() -> None:

@@ -1,6 +1,6 @@
 """Background scheduler for periodic news RSS collection.
 
-Designed to be started from api.main lifespan to keep the news_articles table
+Designed to be started from src.api.main lifespan to keep the news_articles table
 populated. Uses lazy imports inside the worker thread so this module itself
 has minimal import-time dependencies.
 """
@@ -22,7 +22,7 @@ def start_news_scheduler(interval_minutes: int = 60) -> threading.Thread:
     """
 
     def _run() -> None:
-        from api.dependencies import SessionLocal
+        from src.api.dependencies import SessionLocal
         from src.collectors.news_collector import NewsCollector
 
         while True:

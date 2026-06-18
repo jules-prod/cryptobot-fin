@@ -21,7 +21,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from config.settings import config
+from src.config.settings import config
 from src.quality.validator import DataValidator0HCLV
 from src.services.exchange_factory import ExchangeFactory
 from src.services.exchange_context import ExchangeClient

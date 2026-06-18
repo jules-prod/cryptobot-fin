@@ -16,7 +16,7 @@ Toutes les features sont calculées sur des données disponibles à l'instant t.
 import numpy as np
 import pandas as pd
 
-from logger_settings import logger
+from src.logger_settings import logger
 from src.analytics.technical_calculator import TechnicalCalculator
 
 # Nombre minimum de lignes pour calculer les indicateurs avec window=50

@@ -7,7 +7,7 @@ from typing import Any
 
 import streamlit as st
 
-from frontend.i18n import t
+from src.frontend.i18n import t
 
 logger = logging.getLogger(__name__)
 

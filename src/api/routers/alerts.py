@@ -6,8 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import nullslast
 from sqlalchemy.orm import Session
 
-from api.dependencies import get_db
-from api.schemas.alerts import SubscribeRequest, SubscribeResponse
+from src.api.dependencies import get_db
+from src.api.schemas.alerts import SubscribeRequest, SubscribeResponse
 from src.models.alert_subscriber import AlertSubscriber
 from src.models.news import NewsArticle
 from src.notifications.notifier import notify_subscribe_confirmation, notify_unsubscribe_confirmation

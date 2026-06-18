@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from datetime import datetime
 
-from api.dependencies import get_db
+from src.api.dependencies import get_db
 
 router = APIRouter(prefix="/health", tags=["health"])
 

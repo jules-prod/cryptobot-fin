@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Re-export shared metrics so existing ``from api.observability import X``
+# Re-export shared metrics so existing ``from src.api.observability import X``
 # call sites keep working. Canonical definitions live in ``src/metrics.py``
 # because the collector image only copies ``src/`` (no ``api/``).
 __all__ = [
@@ -150,7 +150,7 @@ def _setup_otel(app: "FastAPI") -> None:
         FastAPIInstrumentor.instrument_app(app)
 
         try:
-            from api.dependencies import engine as _engine
+            from src.api.dependencies import engine as _engine
 
             SQLAlchemyInstrumentor().instrument(engine=_engine)
         except Exception as exc:  # pragma: no cover - defensive

@@ -90,7 +90,7 @@ def test_live_collection():
     print(f"{BOLD}  2. COLLECTE LIVE — RSS feeds{RESET}")
     print(f"{BOLD}{'─'*60}{RESET}")
 
-    from api.dependencies import SessionLocal, engine
+    from src.api.dependencies import SessionLocal, engine
     from src.collectors.news_collector import NewsCollector
     from src.models.news import Base as NewsBase
 
@@ -128,7 +128,7 @@ def test_db_articles():
     print(f"{BOLD}  3. ARTICLES EN BASE — derniers enrichis{RESET}")
     print(f"{BOLD}{'─'*60}{RESET}")
 
-    from api.dependencies import SessionLocal
+    from src.api.dependencies import SessionLocal
     db = SessionLocal()
     try:
         _show_recent_articles(db, limit=10)
