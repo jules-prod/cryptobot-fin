@@ -91,7 +91,7 @@ Triggered automatically on push to `main` by `.github/workflows/deploy.yml` :
 2. Runner installs `ansible-core` + collections + configures SSH (uses `VPS_SSH_KEY` secret)
 3. `ansible-lint` (non-blocking warnings)
 4. `ansible-playbook playbooks/deploy.yml` runs **2 plays**:
-   - **Play 1** (no escalation) : rsync repo → `/home/ubuntu/cryptobot/`, vérifie `.env`, exécute `scripts/deploy.sh` (compose build + up -d + healthcheck poll)
+   - **Play 1** (no escalation) : rsync repo → `/home/ubuntu/cryptobot/`, vérifie `.env`, déploiement compose inline (build --parallel + up -d + poll healthcheck API/Frontend)
    - **Play 2** (`become: true`) : idempotent — template du vhost nginx `/etc/nginx/sites-available/cryptobot.conf` + symlink sites-enabled, suppression auto des anciens vhosts pour `dtsc-cryptobot.fr`, `nginx -t` strict, reload
 5. External smoke test : `curl https://dtsc-cryptobot.fr/health` depuis le runner
 
@@ -106,7 +106,7 @@ ssh ubuntu@<VPS_IP>
 cd /home/ubuntu/cryptobot
 git log --oneline -10
 git reset --hard <previous-sha>
-bash scripts/deploy.sh
+docker compose build --parallel && docker compose up -d
 ```
 
 ## Fresh VPS Bootstrap (rare, premier provisioning)

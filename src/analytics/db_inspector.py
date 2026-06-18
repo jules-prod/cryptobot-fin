@@ -7,8 +7,8 @@ from typing import Optional, Dict, Any, List
 import pandas as pd
 from datetime import datetime
 from sqlalchemy import create_engine, inspect as sa_inspect, text
-from logger_settings import logger
-from config.settings import config
+from src.logger_settings import logger
+from src.config.settings import config
 from src.services.db_context import database_session, DatabaseConnection, _engine_kwargs
 
 

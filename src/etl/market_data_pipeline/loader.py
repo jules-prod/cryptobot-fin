@@ -1,4 +1,4 @@
-from logger_settings import logger
+from src.logger_settings import logger
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 

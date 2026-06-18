@@ -5,7 +5,7 @@ Utilise pandas_ta_classic
 
 import pandas as pd
 from typing import List, Union, Optional
-from logger_settings import logger
+from src.logger_settings import logger
 
 # Tentative d'import de pandas_ta_classic
 try:

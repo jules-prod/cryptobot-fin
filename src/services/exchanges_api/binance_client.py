@@ -4,8 +4,8 @@ Ce module fournit une interface pour interagir avec l'API Binance.
 """
 
 import ccxt
-from logger_settings import logger
-from src.config.settings import BINANCE_API_KEY, BINANCE_API_SECRET
+from src.logger_settings import logger
+from src.config.api_keys import BINANCE_API_KEY, BINANCE_API_SECRET
 
 
 class BinanceClient:

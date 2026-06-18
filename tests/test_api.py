@@ -16,8 +16,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from api.main import app
-from api.dependencies import get_db
+from src.api.main import app
+from src.api.dependencies import get_db
 from src.models.ohlcv import OHLCV, Base as OHLCVBase
 from src.models.ticker import TickerSnapshot, Base as TickerBase
 from src.models.market_data_base import MarketDataBase

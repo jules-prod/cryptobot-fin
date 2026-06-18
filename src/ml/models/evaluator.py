@@ -24,7 +24,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
-from logger_settings import logger
+from src.logger_settings import logger
 
 
 class ModelEvaluator:

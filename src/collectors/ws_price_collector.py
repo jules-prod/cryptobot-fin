@@ -7,7 +7,7 @@ from typing import List
 
 import websockets
 
-from logger_settings import logger
+from src.logger_settings import logger
 from src.services.live_price_cache import live_price_cache
 
 _BINANCE_WS = "wss://stream.binance.com:9443/stream"

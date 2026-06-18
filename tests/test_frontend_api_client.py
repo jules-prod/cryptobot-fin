@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from frontend.api_client import APIClient
+from src.frontend.api_client import APIClient
 
 
 # ---------------------------------------------------------------------------

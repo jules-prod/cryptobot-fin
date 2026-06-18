@@ -18,8 +18,8 @@ from sqlalchemy.pool import StaticPool
 
 from unittest.mock import patch
 
-from api.main import app
-from api.dependencies import get_db
+from src.api.main import app
+from src.api.dependencies import get_db
 from src.models.ohlcv import OHLCV, Base as OHLCVBase
 from src.models.paper_trade import PaperPortfolio, PaperTrade, Base as PaperTradeBase
 from src.paper_trading.paper_trader import PaperTrader

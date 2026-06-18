@@ -16,7 +16,7 @@ def test_binance_client_constructs_without_keys_in_public_mode():
             os.environ.pop(k, None)
 
         # Re-import des settings pour invalider la lecture initiale
-        from src.config import settings as cfg_settings
+        from src.config import api_keys as cfg_settings
         importlib.reload(cfg_settings)
 
         # Re-import du client

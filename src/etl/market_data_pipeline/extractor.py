@@ -1,4 +1,4 @@
-from logger_settings import logger
+from src.logger_settings import logger
 import time
 
 

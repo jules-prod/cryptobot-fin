@@ -28,7 +28,7 @@ import ssl
 from datetime import datetime
 from email.mime.text import MIMEText
 
-from logger_settings import logger
+from src.logger_settings import logger
 
 _FROM = os.getenv("ALERT_EMAIL_FROM", "").strip()
 _PWD = os.getenv("ALERT_EMAIL_PASSWORD", "").strip()

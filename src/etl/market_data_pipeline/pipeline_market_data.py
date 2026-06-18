@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
-from logger_settings import logger
+from src.logger_settings import logger
 
 
 @dataclass

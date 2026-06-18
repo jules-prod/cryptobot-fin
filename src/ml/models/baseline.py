@@ -31,7 +31,7 @@ try:
 except ImportError:
     _XGBOOST_AVAILABLE = False
 
-from logger_settings import logger
+from src.logger_settings import logger
 
 # Types de modèles disponibles
 _MODEL_TYPES = ("dummy", "logistic_regression", "random_forest", "xgboost")

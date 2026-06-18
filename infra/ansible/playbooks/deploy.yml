@@ -106,21 +106,66 @@
         line: "MLFLOW_TRACKING_PASSWORD={{ mlflow_tracking_password }}"
         create: false
 
-    - name: Make deploy script executable
-      file:
-        path: "{{ docker_compose_dir }}/scripts/deploy.sh"
-        mode: "0755"
-
-    - name: Run deploy script
-      command: "{{ docker_compose_dir }}/scripts/deploy.sh"
+    - name: Build docker images
+      command: docker compose build --parallel
       args:
         chdir: "{{ docker_compose_dir }}"
-      register: deploy_output
       changed_when: true
 
-    - name: Show deploy output
+    - name: Stop old containers
+      command: docker compose down --remove-orphans --timeout 30
+      args:
+        chdir: "{{ docker_compose_dir }}"
+      changed_when: true
+
+    - name: Start services
+      command: docker compose up -d
+      args:
+        chdir: "{{ docker_compose_dir }}"
+      changed_when: true
+
+    - name: Wait for API to become healthy (retry up to 90s)
+      uri:
+        url: http://localhost:8000/health
+        status_code: 200
+      register: api_health
+      until: api_health.status == 200
+      retries: 18
+      delay: 5
+      failed_when: false
+
+    - name: Fail if API never became healthy
+      fail:
+        msg: "API n'a pas répondu 200 sur /health après ~90s — démarrage réellement en échec."
+      when: api_health.status != 200
+
+    - name: Wait for Frontend to become healthy (retry up to 60s)
+      # Streamlit met parfois >30s à démarrer : on poll jusqu'à ~60s (20 x 3s) au lieu
+      # d'un test instantané qui produisait de faux échecs (rc=1 + mail CI) site OK.
+      uri:
+        url: http://localhost:8501/_stcore/health
+        status_code: 200
+      register: frontend_health
+      until: frontend_health.status == 200
+      retries: 20
+      delay: 3
+      failed_when: false
+
+    - name: Fail if Frontend never became healthy
+      fail:
+        msg: "Frontend n'a pas répondu 200 sur /_stcore/health après ~60s — démarrage réellement en échec."
+      when: frontend_health.status != 200
+
+    - name: Collect container status
+      command: docker compose ps
+      args:
+        chdir: "{{ docker_compose_dir }}"
+      changed_when: false
+      register: compose_ps
+
+    - name: Show container status
       debug:
-        var: deploy_output.stdout_lines
+        var: compose_ps.stdout_lines
 
 
 - name: Deploy Crypto Bot — Nginx reverse proxy

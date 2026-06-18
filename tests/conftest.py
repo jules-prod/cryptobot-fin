@@ -10,7 +10,7 @@ import sys
 # Ajouter le chemin racine au path pour les imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from config.settings import config
+from src.config.settings import config
 
 
 def pytest_configure():

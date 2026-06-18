@@ -4,7 +4,7 @@ Module Transformer pour le pipeline ETL
 
 import pandas as pd
 from typing import List, Dict
-from logger_settings import logger
+from src.logger_settings import logger
 from src.quality.validator import DataValidator0HCLV
 
 

@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 from typing import Optional, Any, List
-from logger_settings import logger
+from src.logger_settings import logger
 from src.analytics.technical_calculator import TechnicalCalculator
 
 

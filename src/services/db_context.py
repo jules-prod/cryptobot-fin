@@ -5,8 +5,8 @@ Module de gestion des connexions à la base de données avec context managers. F
 from contextlib import contextmanager
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
-from logger_settings import logger
-from config.settings import config
+from src.logger_settings import logger
+from src.config.settings import config
 from typing import Generator, Any
 
 
