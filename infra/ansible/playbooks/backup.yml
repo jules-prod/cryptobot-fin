@@ -1,55 +1,48 @@
 ---
-# Backup playbook — STUB FOR ITER 1
-# TODO(iter 2): real backup once postgres/timescale added. For iter 1 (4 services,
-# SQLite + local volumes), this is a basic tar of data/. See cb-master-roadmap.md Phase 4.3.
+# Backup playbook — deploys the canonical backup job.
+#
+# The stack runs on SQLite (data/crypto_data.db), not TimescaleDB. The backup
+# tars the data dir + .env + Grafana state and publishes the node-exporter
+# textfile freshness metric consumed by the Grafana "alert-backup-stale" rule.
+# See infra/backup/backup.sh for the script itself.
 
-- name: Backup Crypto Bot Data (stub)
+- name: Deploy Crypto Bot backup job
   hosts: vps
   become: true
-  become_user: "{{ deploy_user }}"
   vars_files:
     - ../group_vars/vps.yml
 
   tasks:
     - name: Create backup directory
       file:
-        path: "{{ docker_compose_dir }}/backups"
+        path: /opt/backups
         state: directory
+        owner: root
+        group: root
         mode: "0750"
 
-    - name: Backup SQLite data dir
-      shell: |
-        set -euo pipefail
-        TS=$(date +%Y%m%d_%H%M%S)
-        cd {{ docker_compose_dir }}
-        tar czf backups/data_${TS}.tar.gz data/ 2>/dev/null || echo "no data dir yet"
-      changed_when: true
+    - name: Install canonical backup script
+      copy:
+        src: ../../backup/backup.sh
+        dest: /opt/backups/backup.sh
+        owner: root
+        group: root
+        mode: "0750"
 
-    - name: Publish backup freshness metric (node-exporter textfile collector)
-      become: true
-      become_user: root
-      shell: |
-        set -euo pipefail
-        DIR=/var/lib/node_exporter/textfile
-        mkdir -p "$DIR"
-        TMP="$DIR/.cryptobot_backup.prom.$$"
-        {
-          echo '# HELP cryptobot_backup_last_success_timestamp_seconds Unix time of the last successful backup.'
-          echo '# TYPE cryptobot_backup_last_success_timestamp_seconds gauge'
-          echo "cryptobot_backup_last_success_timestamp_seconds $(date +%s)"
-        } > "$TMP"
-        mv "$TMP" "$DIR/cryptobot_backup.prom"
-      changed_when: true
+    - name: Schedule daily backup (root crontab)
+      cron:
+        name: cryptobot-backup
+        user: root
+        minute: "0"
+        hour: "3"
+        job: "/opt/backups/backup.sh >> /var/log/cryptobot-backup.log 2>&1"
 
-    - name: Cleanup old backups (> {{ backup_retention_days }} days)
-      find:
-        paths: "{{ docker_compose_dir }}/backups"
-        patterns: "data_*.tar.gz"
-        age: "{{ backup_retention_days }}d"
-      register: old_backups
-
-    - name: Delete old backups
-      file:
-        path: "{{ item.path }}"
+    - name: Remove legacy ubuntu backup cron (timescaledb regression)
+      cron:
+        name: cryptobot-backup
+        user: "{{ deploy_user }}"
         state: absent
-      loop: "{{ old_backups.files }}"
+
+    - name: Run backup once to refresh freshness metric
+      command: /opt/backups/backup.sh
+      changed_when: true

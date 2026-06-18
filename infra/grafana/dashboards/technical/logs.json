@@ -88,10 +88,63 @@
       "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "right" } }
     },
     {
+      "id": 6,
+      "title": "Conteneurs qui reportent (7 jours)",
+      "description": "Les 12 services docker-compose et leur nombre de lignes de logs vues par Loki sur 7 jours (= rétention Loki). Fenêtre fixe indépendante du sélecteur de temps, pour que les exporters/agents silencieux (qui ne loggent qu'au démarrage : node-exporter, nginx-exporter, otel-collector, mlflow, promtail) restent visibles. Orange = quasi silencieux (< 100 lignes/7j).",
+      "type": "table",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 4 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "sum by (container) (count_over_time({container=~\"crypto.*\"}[7d]))",
+          "legendFormat": "",
+          "refId": "A",
+          "queryType": "instant",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "indexByName": {},
+            "renameByName": { "container": "Conteneur", "Value": "Lignes (7j)" }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": { "fields": "", "sort": [ { "field": "Lignes (7j)", "desc": true } ] }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "align": "auto", "filterable": true },
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "orange", "value": null },
+              { "color": "green", "value": 100 }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Lignes (7j)" },
+            "properties": [ { "id": "custom.cellOptions", "value": { "type": "color-background", "mode": "gradient" } } ]
+          }
+        ]
+      },
+      "options": { "showHeader": true, "cellHeight": "sm", "footer": { "show": true, "reducer": ["count"], "fields": ["Conteneur"] } }
+    },
+    {
       "id": 4,
       "title": "Live Logs — API",
       "type": "logs",
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 4 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 13 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
@@ -117,7 +170,7 @@
       "id": 5,
       "title": "Errors — All Containers",
       "type": "logs",
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 14 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 23 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
@@ -182,9 +235,9 @@
       }
     ]
   },
-  "time": { "from": "now-1h", "to": "now" },
+  "time": { "from": "now-24h", "to": "now" },
   "timepicker": {},
   "title": "Logs",
   "uid": "cryptobot-logs",
-  "version": 1
+  "version": 2
 }
