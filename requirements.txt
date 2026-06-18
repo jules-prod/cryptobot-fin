@@ -24,7 +24,11 @@ xgboost>=2.0.0
 mlflow==2.18.0  # aligné sur le serveur MLflow self-hosted (2.x, UI sans auth-gating)
 
 # API
-fastapi>=0.104.0
+# Upper bound: FastAPI 0.137 introduced `_IncludedRouter` route placeholders that
+# prometheus-fastapi-instrumentator 8.0.0 cannot iterate (AttributeError on route.path),
+# breaking every API request in a fresh install. Cap below 0.137 until the instrumentator
+# handles them. 0.136 keeps starlette unbounded (>=0.46), so streamlit stays compatible.
+fastapi>=0.104.0,<0.137
 uvicorn[standard]>=0.24.0
 pydantic[email]>=2.0.0
 
