@@ -6,7 +6,7 @@ Supporte JSON et YAML avec surcharge par variables d'environnement et arguments.
 import os
 import json
 import yaml
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from pathlib import Path
 from src.logger_settings import logger
 
@@ -225,7 +225,7 @@ class Config:
 
         # Journaliser les paramètres mis à jour
         logger.info(
-            f"✅ Configuration mise à jour depuis les arguments de ligne de commande:"
+            "✅ Configuration mise à jour depuis les arguments de ligne de commande:"
         )
         logger.info(f"  Paires: {self._config.get('pairs')}")
         logger.info(f"  Exchanges: {self._config.get('exchanges')}")

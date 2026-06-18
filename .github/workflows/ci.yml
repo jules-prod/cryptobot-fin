@@ -17,7 +17,7 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install ruff
-      - run: ruff check src/ api/ frontend/ collector/
+      - run: ruff check src/
 
   test:
     name: Tests

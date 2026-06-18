@@ -9,7 +9,7 @@ Pipeline ETL multi-exchange → base de données → API REST → dashboard Stre
 make setup
 ```
 
-`setup.sh` détecte l'OS et installe les dépendances adaptées :
+`ops/setup.sh` détecte l'OS et installe les dépendances adaptées :
 
 | OS | Support |
 |---|---|
@@ -133,40 +133,33 @@ Pipeline ETL multi-exchange (ccxt) : OHLCV incrémental, ticker temps réel, his
 ## Structure du projet
 
 ```
-├── api/
-│   ├── routers/          # Endpoints FastAPI (ohlcv, market, signals, news, ml, alerts, paper_trading)
-│   ├── schemas/          # Schémas Pydantic
-│   ├── dependencies.py   # Session SQLAlchemy
-│   └── main.py           # App FastAPI + lifespan
-├── frontend/
-│   ├── pages/            # 6 pages Streamlit
-│   ├── components/       # Composants réutilisables
-│   ├── api_client.py     # Client HTTP vers l'API
-│   └── app.py            # Point d'entrée Streamlit
-├── mlflow/
-│   └── Dockerfile        # Image MLflow pour Docker
-├── src/
+├── src/                  # Tout le code applicatif
+│   ├── api/              # API FastAPI (routers, schemas, dependencies, main.py, Dockerfile)
+│   ├── frontend/         # UI Streamlit (pages, components, api_client, app.py, Dockerfile)
 │   ├── collectors/       # OHLCV, ticker, news RSS, Fear & Greed, WebSocket
 │   ├── etl/              # Pipeline Extract → Transform → Load
 │   ├── models/           # Modèles SQLAlchemy
 │   ├── paper_trading/    # Moteur paper trading (PaperTrader)
-│   ├── services/         # LivePriceCache (singleton WS)
+│   ├── services/         # LivePriceCache (singleton WS), clients exchanges
 │   ├── analytics/        # Indicateurs techniques
 │   ├── notifications/    # Alertes email
-│   └── ml/
-│       ├── backtesting/
-│       ├── feature_engineering/
-│       ├── models/
-│       ├── nlp/
-│       └── mlflow_utils.py
-├── config/               # settings.py, config.yaml
-├── docs/                 # Documentation technique
-├── scripts/              # fetch_history.py, collect_news.py, migrate_to_postgres.py…
+│   ├── ml/               # backtesting, feature_engineering, models, nlp
+│   ├── config/           # settings.py (Config/YAML), api_keys.py, config.yaml
+│   ├── collector/        # Dockerfile collecte planifiée
+│   ├── logger_settings.py
+│   └── main.py           # Point d'entrée collecte OHLCV
+├── ops/                  # Exploitation hors-app
+│   ├── scripts/          # fetch_history.py, collect_news.py, migrate_to_postgres.py…
+│   ├── notebooks/        # Notebooks d'analyse
+│   ├── mlflow/           # Dockerfile + entrypoint MLflow
+│   └── setup.sh          # Script d'installation multi-OS
+├── docs/                 # Documentation technique (+ SAUVEGARDES.md)
 ├── tests/                # Suite de tests pytest
-├── setup.sh              # Script d'installation multi-OS
+├── infra/                # Observabilité, Ansible, Nginx (déploiement VPS)
+├── data/                 # Données (SQLite, raw/processed)
 ├── Makefile
 ├── docker-compose.yml
-├── main.py               # Point d'entrée collecte OHLCV
+├── pyproject.toml
 └── requirements.txt
 ```
 
