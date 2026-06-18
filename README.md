@@ -144,16 +144,19 @@ Pipeline ETL multi-exchange (ccxt) : OHLCV incrémental, ticker temps réel, his
 │   ├── api/              # API FastAPI (routers, schemas, dependencies, main.py, Dockerfile)
 │   ├── frontend/         # UI Streamlit (pages, components, api_client, app.py, Dockerfile)
 │   ├── collectors/       # OHLCV, ticker, news RSS, Fear & Greed, WebSocket
+│   ├── collector/        # Dockerfile collecte planifiée
 │   ├── etl/              # Pipeline Extract → Transform → Load
 │   ├── models/           # Modèles SQLAlchemy
 │   ├── paper_trading/    # Moteur paper trading (PaperTrader)
-│   ├── services/         # LivePriceCache (singleton WS), clients exchanges
+│   ├── services/         # LivePriceCache (WS), clients exchanges, contexts DB/exchange
+│   ├── schedulers/       # Planificateurs OHLCV / ticker / market data
 │   ├── analytics/        # Indicateurs techniques
 │   ├── notifications/    # Alertes email
 │   ├── ml/               # backtesting, feature_engineering, models, nlp
-│   ├── config/           # settings.py (Config/YAML), api_keys.py, config.yaml
-│   ├── collector/        # Dockerfile collecte planifiée
+│   ├── quality/          # Validation des données (validator.py)
+│   ├── config/           # settings.py, api_keys.py, config.yaml
 │   ├── logger_settings.py
+│   ├── metrics.py        # Métriques Prometheus
 │   └── main.py           # Point d'entrée collecte OHLCV
 ├── ops/                  # Exploitation hors-app
 │   ├── scripts/          # fetch_history.py, collect_news.py, migrate_to_postgres.py…
