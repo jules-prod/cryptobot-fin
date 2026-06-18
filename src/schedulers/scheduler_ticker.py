@@ -4,10 +4,10 @@ Module de planification dédié aux tâches de ticker en temps réel.
 
 import time
 import threading
-from typing import List, Dict, Optional
+from typing import Dict, Optional
 from datetime import datetime, timedelta
-from logger_settings import logger
-from config.settings import config
+from src.logger_settings import logger
+from src.config.settings import config
 from src.collectors.ticker_collector import TickerCollector
 
 

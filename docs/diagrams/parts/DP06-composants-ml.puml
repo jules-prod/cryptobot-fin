@@ -1,0 +1,111 @@
+@startuml DP06-composants-ml
+' ============================================================
+' CryptoBot — PlantUML Shared Skin & Stereotypes
+' ============================================================
+
+skinparam backgroundColor white
+skinparam defaultFontName "Segoe UI, Helvetica, Arial, sans-serif"
+skinparam defaultFontSize 16
+skinparam defaultFontColor #333333
+skinparam shadowing false
+skinparam roundCorner 6
+skinparam nodesep 45
+skinparam ranksep 55
+skinparam padding 3
+scale max 1920*1080
+left to right direction
+
+skinparam component {
+  BackgroundColor #F3EEFF
+  BorderColor #7C5CFC
+  FontColor #333333
+  ArrowColor #4A6FA5
+  StereotypeFontColor #7C5CFC
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #4A6FA5
+  FontColor #333333
+}
+skinparam database {
+  BackgroundColor #ECFDF5
+  BorderColor #34A853
+  FontColor #333333
+}
+skinparam legend {
+  BackgroundColor #F5F5F5
+  BorderColor #CCCCCC
+  FontColor #333333
+}
+
+title CryptoBot — Composants ML & Signaux — adaptation 03
+caption Rule Engine | Feature Engineering | Walk-Forward | MLflow — corrigé : SQLite (ex-Supabase) · MLflow nginx (ex-DagsHub)
+
+' ============================================================
+' Source — SQLite (corrigé, ex-PostgreSQL/Supabase)
+' ============================================================
+database "SQLite\ncrypto_data.db\ntable ohlcv" as sqlite #ECFDF5
+
+' ============================================================
+' Rule Engine (étape regroupée)
+' ============================================================
+package "Rule Engine" as p_rule #FEF3E8 {
+  component "TechnicalCalculator <<rule>>\nRSI · MACD · Bollinger · SMA · EMA\n— — —\nSignalScorer <<rule>>\nBUY / SELL / HOLD · score (-1, +1)" as rule
+}
+
+' ============================================================
+' Feature Engineering (étape regroupée)
+' ============================================================
+package "Feature Engineering" as p_feat #EFE9FB {
+  component "FeatureBuilder <<transformer>>\n43 features (rendements, volatilité,\nindicateurs, bougie, volume, temporel)\n— — —\nDatasetBuilder <<transformer>>\ntarget close(t+1) > close(t)\nTimeSeriesSplit · anti-leakage" as feat
+}
+
+' ============================================================
+' Modèles (4 — donnent la hauteur)
+' ============================================================
+package "Modèles (Pipeline: StandardScaler + model)" as p_models #EFE9FB {
+  component "XGBoost ★ <<model>>\n300 arbres · depth 4" as xgb
+  component "Dummy <<model>>\n(plancher)" as dummy
+  component "Logistic Regression <<model>>\nC=0.1 · balanced" as logreg
+  component "Random Forest <<model>>\n200 arbres · depth 6" as rf
+}
+
+' ============================================================
+' Walk-Forward Backtesting (étape regroupée)
+' ============================================================
+package "Walk-Forward Backtesting" as p_back #FEF3E8 {
+  component "Backtester\ntrain 180j · purge 1j · test 30j · embargo 1j · ×N folds\n— — —\nMétriques / fold : accuracy · win rate · PnL\nSharpe · drawdown · profit_factor\n— — —\nModelEvaluator · compare_models() vs buy-and-hold" as back
+}
+
+' ============================================================
+' MLOps (étape regroupée) — MLflow nginx (ex-DagsHub)
+' ============================================================
+package "MLOps" as p_mlops #ECFDF5 {
+  component "mlflow_utils\nlog_backtest_metrics()\ndégradation gracieuse\n— — —\nMLflow Deployment (nginx)\nauto-hébergé · backend SQLite\nstatic-prefix /mlflow" as mlops
+}
+
+' ============================================================
+' Flux (5 rangs : SQLite → Rule/Feature → Modèles → Backtest → MLOps)
+' ============================================================
+sqlite --> rule : OHLCV
+sqlite --> feat : OHLCV
+feat --> xgb
+feat --> dummy
+feat --> logreg
+feat --> rf
+rule --> back
+xgb --> back
+dummy --> back
+logreg --> back
+rf --> back
+back --> mlops : log
+
+legend bottom right
+  |= Couleur    |= Rôle                       |
+  | <#FEF3E8>   | Rule Engine / Backtest       |
+  | <#EFE9FB>   | Feature Eng / Modèles        |
+  | <#ECFDF5>   | Stockage / MLOps             |
+  |= Corrigé    | ex-PostgreSQL → SQLite · ex-DagsHub → MLflow nginx |
+endlegend
+
+@enduml

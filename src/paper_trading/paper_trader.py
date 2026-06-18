@@ -6,6 +6,12 @@ from sqlalchemy.orm import Session
 
 from src.models.ohlcv import OHLCV
 from src.models.paper_trade import PaperPortfolio, PaperTrade
+from src.metrics import (
+    paper_balance_usd,
+    paper_pnl_total,
+    paper_trades_total,
+    paper_win_ratio,
+)
 
 
 class PaperTrader:
@@ -89,6 +95,10 @@ class PaperTrader:
         self.db.add(trade)
         self.db.commit()
         self.db.refresh(trade)
+        paper_trades_total.labels(symbol=trade.symbol, side=trade.side).inc()
+        portfolio = self.db.query(PaperPortfolio).filter(PaperPortfolio.id == trade.portfolio_id).first()
+        if portfolio is not None:
+            self._update_paper_metrics(portfolio)
         return trade
 
     def close_position(self, trade_id: str) -> PaperTrade:
@@ -114,7 +124,26 @@ class PaperTrader:
 
         self.db.commit()
         self.db.refresh(trade)
+        self._update_paper_metrics(portfolio)
         return trade
+
+    def _update_paper_metrics(self, portfolio: PaperPortfolio) -> None:
+        """Refresh Prometheus gauges from current portfolio state."""
+        closed = (
+            self.db.query(PaperTrade)
+            .filter(
+                PaperTrade.portfolio_id == portfolio.id,
+                PaperTrade.status == "CLOSED",
+            )
+            .all()
+        )
+        total_pnl = sum((t.pnl or 0) for t in closed)
+        wins = sum(1 for t in closed if (t.pnl or 0) > 0)
+        total = len(closed)
+        paper_balance_usd.set(portfolio.cash)
+        paper_pnl_total.set(total_pnl)
+        paper_win_ratio.set(wins / total if total > 0 else 0)
+
 
     def get_portfolio_summary(self, portfolio_id: str) -> dict:
         portfolio = self.db.query(PaperPortfolio).filter(PaperPortfolio.id == portfolio_id).first()

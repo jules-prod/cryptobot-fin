@@ -2,10 +2,22 @@ services:
   mlflow:
     build:
       context: .
-      dockerfile: mlflow/Dockerfile
+      dockerfile: ops/mlflow/Dockerfile
     restart: unless-stopped
+    env_file: .env
+    # Plus de variables MLflow ici : l'auth native est retirée (protection nginx
+    # seule). MLFLOW_TRACKING_* restent dans .env (consommés par nginx htpasswd via
+    # Ansible) mais ne sont plus lus par le conteneur mlflow.
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]  # 2.x: /health (pas /mlflow/health)
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 5
+    # Bind localhost uniquement : MLflow n'est PAS exposé publiquement.
+    # Accès externe via nginx (/mlflow/, basic-auth) ; accès interne via crypto-net.
     ports:
-      - "5001:5000"
+      - "127.0.0.1:5001:5000"
     volumes:
       - mlflow-data:/mlflow
     networks:
@@ -14,12 +26,17 @@ services:
   api:
     build:
       context: .
-      dockerfile: api/Dockerfile
+      dockerfile: src/api/Dockerfile
     restart: unless-stopped
     env_file: .env
     environment:
       CRYPTO_BOT_DB_URL: sqlite:///data/processed/crypto_data.db
-      MLFLOW_TRACKING_URI: sqlite:////mlflow/mlflow.db
+      # Tracking via le SERVEUR MLflow (2.x). ⚠️ En MLflow 2.x, --static-prefix /mlflow
+      # ne s'applique QU'À l'UI + ajax-api (navigateur) : l'API REST client reste à la
+      # RACINE (/api/2.0/...). Le client DOIT donc utiliser http://mlflow:5000 SANS /mlflow
+      # (un /mlflow ici → 404 → runs perdus). Le serveur range runs + artefacts sous
+      # --default-artifact-root /mlflow/artifacts (volume mlflow-data partagé, servi par l'UI).
+      MLFLOW_TRACKING_URI: http://mlflow:5000
     ports:
       - "8000:8000"
     volumes:
@@ -39,7 +56,7 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: frontend/Dockerfile
+      dockerfile: src/frontend/Dockerfile
     restart: unless-stopped
     environment:
       API_URL: http://api:8000
@@ -50,23 +67,154 @@ services:
         condition: service_healthy
     networks:
       - crypto-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
 
   collector:
     build:
       context: .
-      dockerfile: collector/Dockerfile
+      dockerfile: src/collector/Dockerfile
     restart: unless-stopped
     env_file: .env
     environment:
       CRYPTO_BOT_DB_URL: sqlite:///data/processed/crypto_data.db
       CRYPTO_BOT_SCHEDULE_TIME: "08:00"
+      # Même serveur MLflow que l'api (2.x : URI client SANS /mlflow — cf. service api).
+      MLFLOW_TRACKING_URI: http://mlflow:5000
     volumes:
       - ./data:/app/data
     networks:
       - crypto-net
 
+  prometheus:
+    image: prom/prometheus:v2.55.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-lifecycle
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - crypto-net
+
+  loki:
+    image: grafana/loki:3.2.0
+    restart: unless-stopped
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./infra/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki-data:/loki
+    networks:
+      - crypto-net
+
+  promtail:
+    image: grafana/promtail:3.2.0
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      - ./infra/promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - loki
+    networks:
+      - crypto-net
+
+
+  tempo:
+    image: grafana/tempo:2.6.1
+    restart: unless-stopped
+    command: -config.file=/etc/tempo.yml
+    volumes:
+      - ./infra/tempo/tempo-config.yml:/etc/tempo.yml:ro
+      - tempo-data:/var/tempo
+    networks:
+      - crypto-net
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.111.0
+    restart: unless-stopped
+    command: ["--config=/etc/otel-collector.yml"]
+    volumes:
+      - ./infra/otel/collector-config.yml:/etc/otel-collector.yml:ro
+    depends_on:
+      - tempo
+      - loki
+    networks:
+      - crypto-net
+
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:1.4
+    restart: unless-stopped
+    network_mode: host
+    command:
+      - --nginx.scrape-uri=http://127.0.0.1:8080/nginx_status
+      - --web.listen-address=:9113
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    restart: unless-stopped
+    command:
+      - --path.rootfs=/host
+      - --collector.textfile.directory=/var/lib/node_exporter/textfile
+    volumes:
+      - /:/host:ro,rslave
+      - /var/lib/node_exporter/textfile:/var/lib/node_exporter/textfile:ro
+    networks:
+      - crypto-net
+
+  grafana:
+    build:
+      context: infra/grafana
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      GF_SERVER_ROOT_URL: https://dtsc-cryptobot.fr/grafana
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD}
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_USERS_DEFAULT_THEME: light
+      GF_USERS_DEFAULT_HOME_DASHBOARD_UID: cryptobot-home
+      GF_SMTP_ENABLED: "true"
+      GF_SMTP_HOST: ${SMTP_HOST}
+      GF_SMTP_USER: ${SMTP_USER}
+      GF_SMTP_PASSWORD: ${SMTP_PASSWORD}
+      GF_SMTP_FROM_ADDRESS: ${SMTP_FROM}
+      GF_SMTP_FROM_NAME: "CryptoBot Grafana"
+      GF_SMTP_SKIP_VERIFY: "false"
+      ALERT_EMAIL_TO: ${ALERT_EMAIL_TO}
+      GF_INSTALL_PLUGINS: "frser-sqlite-datasource,yesoreyeram-infinity-datasource"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./data:/app/data:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    networks:
+      - crypto-net
+
 volumes:
   mlflow-data:
+  prometheus-data:
+  loki-data:
+  tempo-data:
+  grafana-data:
 
 networks:
   crypto-net:

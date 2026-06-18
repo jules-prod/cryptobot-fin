@@ -3,10 +3,8 @@ Module Transformer pour le pipeline ETL
 """
 
 import pandas as pd
-import numpy as np
-from typing import List, Dict, Optional
-from datetime import datetime
-from logger_settings import logger
+from typing import List, Dict
+from src.logger_settings import logger
 from src.quality.validator import DataValidator0HCLV
 
 

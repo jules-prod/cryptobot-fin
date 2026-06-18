@@ -1,0 +1,89 @@
+@startuml DP04-network-security
+' ============================================================
+' CryptoBot — PlantUML Shared Skin & Stereotypes
+' ============================================================
+
+skinparam backgroundColor white
+skinparam defaultFontName "Segoe UI, Helvetica, Arial, sans-serif"
+skinparam defaultFontSize 16
+skinparam defaultFontColor #333333
+skinparam shadowing false
+skinparam roundCorner 6
+skinparam nodesep 35
+skinparam ranksep 50
+skinparam padding 3
+scale max 1920*1080
+
+skinparam component {
+  BackgroundColor #F3EEFF
+  BorderColor #7C5CFC
+  FontColor #333333
+  ArrowColor #4A6FA5
+  StereotypeFontColor #7C5CFC
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #4A6FA5
+  FontColor #333333
+}
+skinparam node {
+  BackgroundColor #F3EEFF
+  BorderColor #7C5CFC
+  FontColor #333333
+}
+skinparam note {
+  BackgroundColor #FEF3E8
+  BorderColor #E8943A
+  FontColor #333333
+}
+skinparam legend {
+  BackgroundColor #F5F5F5
+  BorderColor #CCCCCC
+  FontColor #333333
+}
+
+title CryptoBot — Sécurité & Routage Production V2 (dtsc-cryptobot.fr)
+caption Toutes les routes en TLS · 2 niveaux : PUBLIC (TLS + rate-limit) vs AUTHENTIFIÉ (auth_basic)
+
+actor "Utilisateur\n(navigateur)" as user
+
+node "nginx (host) — terminaison TLS\nLet's Encrypt · :80 → 301 → :443\nUFW 22/80/443 · fail2ban · HSTS" as nginx #FEF3E8
+
+' ============================================================
+' Zone 1 — PUBLIC (TLS + rate-limit, AUCUNE authentification)
+' ============================================================
+package "Zone PUBLIQUE — TLS + rate-limit · SANS authentification" as zpublic #E8F0FB {
+  component "Streamlit frontend\n/  ·  /_stcore/\n→ :8501" as front
+  component "FastAPI api (lecture publique)\n/api  ·  /docs /redoc /openapi.json\n/api/v1/auth (rate-limit burst 5)\n→ :8000" as api
+}
+
+' ============================================================
+' Zone 2 — AUTHENTIFIÉ (TLS + auth_basic)
+' ============================================================
+package "Zone AUTHENTIFIÉE — TLS + 🔒 auth_basic (htpasswd)" as zauth #ECFDF5 {
+  component "Grafana\n/grafana/  → :3000" as grafana
+  component "MLflow (static-prefix /mlflow)\n/mlflow/  → :5001" as mlflow
+}
+
+user --> nginx : HTTPS :443
+nginx --> front   : TLS
+nginx --> api     : TLS · rate-limit (burst 50)
+nginx --> grafana : TLS · 🔒 auth_basic
+nginx --> mlflow  : TLS · 🔒 auth_basic
+
+note bottom of api
+  L'API est PUBLIQUE en lecture :
+  pas d'authentification applicative (ni JWT, ni clé).
+  Protection = TLS (chiffrement) + rate-limiting nginx.
+end note
+
+legend bottom right
+  |= Route             |= TLS |= Rate-limit |= Auth        |
+  | /  (Streamlit)     |  ✓   |   —         |  —            |
+  | /api · /docs       |  ✓   |  burst 50   |  — (public)   |
+  | /api/v1/auth       |  ✓   |  burst 5    |  — (public)   |
+  | /grafana           |  ✓   |   —         |  🔒 auth_basic |
+  | /mlflow            |  ✓   |   —         |  🔒 auth_basic |
+endlegend
+
+@enduml

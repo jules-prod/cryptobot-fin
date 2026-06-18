@@ -1,8 +1,8 @@
 import schedule
 import time
 import threading
-from logger_settings import logger
-from config.settings import config
+from src.logger_settings import logger
+from src.config.settings import config
 from src.collectors.market_data_collector import MarketDataCollector
 
 

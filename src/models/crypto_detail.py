@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, Index, JSON, DateTime
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Index, DateTime
 import sys
 from pathlib import Path
 

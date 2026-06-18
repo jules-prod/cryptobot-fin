@@ -1,0 +1,16 @@
+apiVersion: 1
+contactPoints:
+  - orgId: 1
+    name: cryptobot-email
+    receivers:
+      - uid: cryptobot-email-receiver
+        type: email
+        settings:
+          addresses: ${ALERT_EMAIL_TO}
+          singleEmail: false
+          message: |
+            **{{ .Status }}** — {{ .CommonLabels.alertname }}
+            Severity: {{ .CommonLabels.severity }}
+            {{ range .Alerts }}
+            - {{ .Annotations.summary }}
+            {{ end }}

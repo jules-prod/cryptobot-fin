@@ -1,6 +1,5 @@
-import pandas as pd
 from datetime import datetime
-from logger_settings import logger
+from src.logger_settings import logger
 from src.models.global_snapshot import GlobalMarketSnapshot
 from src.models.global_market_cap import GlobalMarketCap
 from src.models.global_market_volume import GlobalMarketVolume

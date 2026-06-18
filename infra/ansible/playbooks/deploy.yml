@@ -1,0 +1,300 @@
+---
+# Deploy crypto-bot to VPS
+# Usage: ansible-playbook -i inventories/production.ini playbooks/deploy.yml
+#
+# Two plays:
+#   1. Sync repo + run docker compose deploy (no privilege escalation)
+#   2. Idempotent nginx vhost setup (become: true)
+# Run on every push to main via .github/workflows/deploy.yml.
+
+- name: Deploy Crypto Bot — App
+  hosts: vps
+  become: false
+  vars_files:
+    - ../group_vars/vps.yml
+
+  tasks:
+    - name: Sync project files to VPS
+      synchronize:
+        src: "{{ playbook_dir }}/../../../"
+        dest: "{{ docker_compose_dir }}/"
+        rsync_opts:
+          - "--exclude=.git"
+          - "--exclude=.env"
+          - "--exclude=__pycache__"
+          - "--exclude=.pytest_cache"
+          - "--exclude=.mypy_cache"
+          - "--exclude=.ruff_cache"
+          - "--exclude=mlruns"
+          - "--exclude=*.pyc"
+          - "--exclude=.venv"
+          - "--exclude=dev.db"
+          - "--exclude=data/processed/"
+          - "--exclude=data/raw/"
+          - "--exclude=mlflow-data/"
+        delete: true
+
+    - name: Verify .env file exists on VPS
+      stat:
+        path: "{{ docker_compose_dir }}/.env"
+      register: env_file
+
+    - name: Fail if .env missing
+      fail:
+        msg: ".env file missing on VPS at {{ docker_compose_dir }}/.env"
+      when: not env_file.stat.exists
+
+    - name: Ensure GF_SECURITY_ADMIN_USER in .env
+      lineinfile:
+        path: "{{ docker_compose_dir }}/.env"
+        regexp: '^GF_SECURITY_ADMIN_USER='
+        line: "GF_SECURITY_ADMIN_USER={{ grafana_admin_user }}"
+        create: false
+
+    - name: Ensure GF_SECURITY_ADMIN_PASSWORD in .env
+      lineinfile:
+        path: "{{ docker_compose_dir }}/.env"
+        regexp: '^GF_SECURITY_ADMIN_PASSWORD='
+        line: "GF_SECURITY_ADMIN_PASSWORD={{ grafana_admin_password }}"
+
+    - name: Ensure SMTP_HOST in .env
+      lineinfile:
+        path: "{{ docker_compose_dir }}/.env"
+        regexp: '^SMTP_HOST='
+        line: "SMTP_HOST={{ smtp_host }}"
+        create: false
+
+    - name: Ensure SMTP_USER in .env
+      lineinfile:
+        path: "{{ docker_compose_dir }}/.env"
+        regexp: '^SMTP_USER='
+        line: "SMTP_USER={{ smtp_user }}"
+        create: false
+
+    - name: Ensure SMTP_PASSWORD in .env
+      lineinfile:
+        path: "{{ docker_compose_dir }}/.env"
+        regexp: '^SMTP_PASSWORD='
+        line: "SMTP_PASSWORD={{ smtp_password }}"
+        create: false
+
+    - name: Ensure SMTP_FROM in .env
+      lineinfile:
+        path: "{{ docker_compose_dir }}/.env"
+        regexp: '^SMTP_FROM='
+        line: "SMTP_FROM={{ smtp_from }}"
+        create: false
+
+    - name: Ensure ALERT_EMAIL_TO in .env
+      lineinfile:
+        path: "{{ docker_compose_dir }}/.env"
+        regexp: '^ALERT_EMAIL_TO='
+        line: "ALERT_EMAIL_TO={{ alert_email_to }}"
+        create: false
+
+    - name: Ensure MLFLOW_TRACKING_USERNAME in .env
+      lineinfile:
+        path: "{{ docker_compose_dir }}/.env"
+        regexp: '^MLFLOW_TRACKING_USERNAME='
+        line: "MLFLOW_TRACKING_USERNAME={{ mlflow_tracking_username }}"
+        create: false
+
+    - name: Ensure MLFLOW_TRACKING_PASSWORD in .env
+      lineinfile:
+        path: "{{ docker_compose_dir }}/.env"
+        regexp: '^MLFLOW_TRACKING_PASSWORD='
+        line: "MLFLOW_TRACKING_PASSWORD={{ mlflow_tracking_password }}"
+        create: false
+
+    - name: Build docker images
+      command: docker compose build --parallel
+      args:
+        chdir: "{{ docker_compose_dir }}"
+      changed_when: true
+
+    - name: Stop old containers
+      command: docker compose down --remove-orphans --timeout 30
+      args:
+        chdir: "{{ docker_compose_dir }}"
+      changed_when: true
+
+    - name: Start services
+      command: docker compose up -d
+      args:
+        chdir: "{{ docker_compose_dir }}"
+      changed_when: true
+
+    - name: Wait for API to become healthy (retry up to 90s)
+      uri:
+        url: http://localhost:8000/health
+        status_code: 200
+      register: api_health
+      until: api_health.status == 200
+      retries: 18
+      delay: 5
+      failed_when: false
+
+    - name: Fail if API never became healthy
+      fail:
+        msg: "API n'a pas répondu 200 sur /health après ~90s — démarrage réellement en échec."
+      when: api_health.status != 200
+
+    - name: Wait for Frontend to become healthy (retry up to 60s)
+      # Streamlit met parfois >30s à démarrer : on poll jusqu'à ~60s (20 x 3s) au lieu
+      # d'un test instantané qui produisait de faux échecs (rc=1 + mail CI) site OK.
+      uri:
+        url: http://localhost:8501/_stcore/health
+        status_code: 200
+      register: frontend_health
+      until: frontend_health.status == 200
+      retries: 20
+      delay: 3
+      failed_when: false
+
+    - name: Fail if Frontend never became healthy
+      fail:
+        msg: "Frontend n'a pas répondu 200 sur /_stcore/health après ~60s — démarrage réellement en échec."
+      when: frontend_health.status != 200
+
+    - name: Collect container status
+      command: docker compose ps
+      args:
+        chdir: "{{ docker_compose_dir }}"
+      changed_when: false
+      register: compose_ps
+
+    - name: Show container status
+      debug:
+        var: compose_ps.stdout_lines
+
+
+- name: Deploy Crypto Bot — Nginx reverse proxy
+  hosts: vps
+  become: true
+  vars_files:
+    - ../group_vars/vps.yml
+
+  tasks:
+    - name: Ensure nginx snippets dir exists
+      file:
+        path: /etc/nginx/snippets
+        state: directory
+        mode: "0755"
+
+    - name: Ensure certbot webroot exists
+      file:
+        path: /var/www/certbot
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: "0755"
+
+    - name: Template nginx proxy-params snippet
+      template:
+        src: ../templates/nginx-proxy-params.conf.j2
+        dest: /etc/nginx/snippets/proxy-params.conf
+        mode: "0644"
+      notify: Reload nginx
+
+    - name: Ensure apache2-utils + passlib installed (for htpasswd module)
+      apt:
+        name:
+          - apache2-utils
+          - python3-passlib
+          - python3-bcrypt
+        state: present
+        update_cache: true
+
+    - name: Allow docker bridge to nginx stub_status port 8080
+      community.general.ufw:
+        rule: allow
+        from_ip: 172.16.0.0/12
+        to_port: '8080'
+        proto: tcp
+        comment: Allow docker containers to scrape nginx_status
+
+    - name: Allow docker bridge to nginx-exporter port 9113
+      community.general.ufw:
+        rule: allow
+        from_ip: 172.16.0.0/12
+        to_port: '9113'
+        proto: tcp
+        comment: Allow Prometheus to scrape nginx-exporter on host net
+
+    - name: Create htpasswd for observability endpoints
+      community.general.htpasswd:
+        path: /etc/nginx/.htpasswd-observability
+        name: "{{ grafana_admin_user }}"
+        password: "{{ grafana_admin_password }}"
+        crypt_scheme: bcrypt
+        mode: "0640"
+        owner: root
+        group: www-data
+
+    - name: Create htpasswd for MLflow endpoint
+      community.general.htpasswd:
+        path: /etc/nginx/.htpasswd-mlflow
+        name: "{{ mlflow_tracking_username }}"
+        password: "{{ mlflow_tracking_password }}"
+        crypt_scheme: bcrypt
+        mode: "0640"
+        owner: root
+        group: www-data
+
+    - name: Template cryptobot vhost
+      template:
+        src: ../templates/nginx-vhost.conf.j2
+        dest: /etc/nginx/sites-available/cryptobot.conf
+        mode: "0644"
+      notify: Reload nginx
+
+    - name: Enable cryptobot vhost (symlink to sites-enabled)
+      file:
+        src: /etc/nginx/sites-available/cryptobot.conf
+        dest: /etc/nginx/sites-enabled/cryptobot.conf
+        state: link
+        force: true
+      notify: Reload nginx
+
+    - name: Disable default nginx vhost
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: Reload nginx
+
+    - name: Find old vhosts referencing dtsc-cryptobot.fr
+      shell: |
+        set -euo pipefail
+        cd /etc/nginx/sites-enabled 2>/dev/null || exit 0
+        for f in *; do
+          [ "$f" = "cryptobot.conf" ] && continue
+          [ -f "$f" ] || [ -L "$f" ] || continue
+          if grep -q "dtsc-cryptobot.fr" "$f" 2>/dev/null; then
+            echo "$f"
+          fi
+        done
+      args:
+        executable: /bin/bash
+      register: old_vhosts
+      changed_when: false
+      failed_when: false
+
+    - name: Remove old dtsc-cryptobot.fr vhosts (keep only cryptobot.conf)
+      file:
+        path: "/etc/nginx/sites-enabled/{{ item }}"
+        state: absent
+      loop: "{{ old_vhosts.stdout_lines }}"
+      when: old_vhosts.stdout_lines | length > 0
+      notify: Reload nginx
+
+    - name: Validate nginx config
+      command: nginx -t
+      register: nginx_test
+      changed_when: false
+      failed_when: nginx_test.rc != 0
+
+  handlers:
+    - name: Reload nginx
+      systemd:
+        name: nginx
+        state: reloaded

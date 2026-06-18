@@ -37,7 +37,7 @@ class Dashboard:
             )
 
             if self.crypto_data is not None and not self.crypto_data.empty:
-                display(self.crypto_data.head())
+                self.logger.info(f"Données OHLCV: {len(self.crypto_data)} lignes")
                 self.logger.info("Données OHLCV récupérées avec succès.")
             else:
                 self.logger.warning(

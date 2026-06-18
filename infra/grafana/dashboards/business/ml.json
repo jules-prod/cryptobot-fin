@@ -1,0 +1,344 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "panels": [
+    {
+      "title": "Total runs",
+      "type": "stat",
+      "id": 1,
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "mlflow-ds"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "url": "http://mlflow:5000/api/2.0/mlflow/runs/search",
+          "url_options": {
+            "method": "POST",
+            "data": "{\"experiment_ids\":[\"1\"],\"max_results\":50,\"order_by\":[\"start_time DESC\"]}",
+            "body_type": "raw",
+            "body_content_type": "application/json",
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "root_selector": "",
+          "filters": [],
+          "format": "table",
+          "parser": "uql",
+          "uql": "parse-json\n| scope \"runs\"\n| project \"run_id\"=\"info.run_id\", \"run_name\"=\"info.run_name\", \"status\"=\"info.status\", \"start_time\"=\"info.start_time\""
+        }
+      ],
+      "transformations": [
+        {
+          "id": "reduce",
+          "options": {
+            "reducers": [
+              "count"
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Recent 20 runs",
+      "type": "table",
+      "id": 2,
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "mlflow-ds"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "url": "http://mlflow:5000/api/2.0/mlflow/runs/search",
+          "url_options": {
+            "method": "POST",
+            "data": "{\"experiment_ids\":[\"1\"],\"max_results\":20,\"order_by\":[\"start_time DESC\"]}",
+            "body_type": "raw",
+            "body_content_type": "application/json",
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "root_selector": "runs",
+          "filters": [],
+          "format": "table",
+          "parser": "backend",
+          "columns": [
+            { "selector": "info.run_id", "text": "run_id", "type": "string" },
+            { "selector": "info.run_name", "text": "run_name", "type": "string" },
+            { "selector": "info.status", "text": "status", "type": "string" },
+            { "selector": "info.start_time", "text": "start_time", "type": "timestamp_epoch" },
+            { "selector": "data.metrics[?(@.key=='sharpe')].value", "text": "sharpe", "type": "number" },
+            { "selector": "data.metrics[?(@.key=='profit_factor')].value", "text": "profit_factor", "type": "number" }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "sharpe"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "profit_factor"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "max_dd"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percentunit"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "title": "Sharpe ratio over runs",
+      "type": "timeseries",
+      "id": 3,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 14
+      },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "mlflow-ds"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "url": "http://mlflow:5000/api/2.0/mlflow/runs/search",
+          "url_options": {
+            "method": "POST",
+            "data": "{\"experiment_ids\":[\"1\"],\"max_results\":50,\"order_by\":[\"start_time DESC\"]}",
+            "body_type": "raw",
+            "body_content_type": "application/json",
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "root_selector": "runs",
+          "filters": [],
+          "format": "timeseries",
+          "parser": "backend",
+          "columns": [
+            { "selector": "info.run_id", "text": "run_id", "type": "string" },
+            { "selector": "info.run_name", "text": "run_name", "type": "string" },
+            { "selector": "info.status", "text": "status", "type": "string" },
+            { "selector": "info.start_time", "text": "start_time", "type": "timestamp_epoch" },
+            { "selector": "data.metrics[?(@.key=='sharpe')].value", "text": "sharpe", "type": "number" }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Profit factor over runs",
+      "type": "timeseries",
+      "id": 4,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 14
+      },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "mlflow-ds"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "url": "http://mlflow:5000/api/2.0/mlflow/runs/search",
+          "url_options": {
+            "method": "POST",
+            "data": "{\"experiment_ids\":[\"1\"],\"max_results\":50,\"order_by\":[\"start_time DESC\"]}",
+            "body_type": "raw",
+            "body_content_type": "application/json",
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "root_selector": "runs",
+          "filters": [],
+          "format": "timeseries",
+          "parser": "backend",
+          "columns": [
+            { "selector": "info.run_id", "text": "run_id", "type": "string" },
+            { "selector": "info.run_name", "text": "run_name", "type": "string" },
+            { "selector": "info.status", "text": "status", "type": "string" },
+            { "selector": "info.start_time", "text": "start_time", "type": "timestamp_epoch" },
+            { "selector": "data.metrics[?(@.key=='profit_factor')].value", "text": "profit_factor", "type": "number" }
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Top 10 runs by sharpe",
+      "type": "bargauge",
+      "id": 5,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 22
+      },
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "mlflow-ds"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "url": "http://mlflow:5000/api/2.0/mlflow/runs/search",
+          "url_options": {
+            "method": "POST",
+            "data": "{\"experiment_ids\":[\"1\"],\"max_results\":50,\"order_by\":[\"metrics.sharpe DESC\"]}",
+            "body_type": "raw",
+            "body_content_type": "application/json",
+            "headers": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "root_selector": "runs",
+          "filters": [],
+          "format": "table",
+          "parser": "backend",
+          "columns": [
+            { "selector": "info.run_name", "text": "run_name", "type": "string" },
+            { "selector": "data.metrics[?(@.key=='sharpe')].value", "text": "sharpe", "type": "number" }
+          ]
+        }
+      ],
+      "transformations": [
+        {
+          "id": "limit",
+          "options": {
+            "limitCount": 10
+          }
+        }
+      ],
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      }
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "tags": [
+    "cryptobot",
+    "ml",
+    "mlflow"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "title": "Machine Learning",
+  "uid": "cryptobot-ml",
+  "version": 102
+}

@@ -34,15 +34,15 @@ endif
 # ── Installation ─────────────────────────────────────────────
 
 setup:
-	@bash setup.sh
+	@bash ops/setup.sh
 
 # ── Local (sans Docker) ───────────────────────────────────────
 
 run:
-	@pkill -f "uvicorn api.main:app" 2>/dev/null || true
+	@pkill -f "uvicorn src.api.main:app" 2>/dev/null || true
 	@echo "→ Base de données : $(if $(filter postgres,$(DB)),PostgreSQL ($(POSTGRES_URL)),SQLite)"
 	@echo "→ Démarrage de l'API FastAPI (port 8000)…"
-	@python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --log-level info & \
+	@python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --log-level info & \
 	_api_pid=$$! ; \
 	echo "  Attente de l'API (max 30s)…" ; \
 	_i=0 ; \
@@ -50,21 +50,21 @@ run:
 	  sleep 1 ; _i=$$((_i+1)) ; \
 	  if [ $$_i -ge 30 ]; then \
 	    echo "❌  L'API n'a pas démarré après 30s — consultez les logs ci-dessus." ; \
-	    echo "    Debug : python -m uvicorn api.main:app --host 0.0.0.0 --port 8000" ; \
+	    echo "    Debug : python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000" ; \
 	    kill $$_api_pid 2>/dev/null ; exit 1 ; \
 	  fi ; \
 	done && \
 	echo "  API prête  : http://localhost:8000/docs" && \
 	echo "  Front      : http://localhost:8501" && \
 	echo "  (Ctrl+C pour arrêter Streamlit — 'make stop' pour l'API)" && \
-	streamlit run frontend/app.py
+	streamlit run src/frontend/app.py
 
 stop:
 	@echo "→ Arrêt de l'API FastAPI…"
-	@pkill -f "uvicorn api.main:app" 2>/dev/null && echo "  API arrêtée." || echo "  API déjà arrêtée."
+	@pkill -f "uvicorn src.api.main:app" 2>/dev/null && echo "  API arrêtée." || echo "  API déjà arrêtée."
 
 run-all:
-	@pkill -f "uvicorn api.main:app" 2>/dev/null || true
+	@pkill -f "uvicorn src.api.main:app" 2>/dev/null || true
 	@pkill -f "mlflow server" 2>/dev/null || true
 	@mkdir -p mlflow-artifacts
 	@echo "→ Stack locale complète — DB : $(if $(filter postgres,$(DB)),PostgreSQL ($(POSTGRES_URL)),SQLite)"
@@ -75,7 +75,7 @@ run-all:
 	  --allowed-hosts "*" >/dev/null & \
 	_mlf=$$!; \
 	MLFLOW_TRACKING_URI=http://localhost:5001 \
-	python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --log-level info & \
+	python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --log-level info & \
 	_api=$$!; \
 	trap 'echo "  Arrêt des services…"; kill $$_mlf $$_api 2>/dev/null' EXIT INT TERM; \
 	echo "  Attente MLflow…"; sleep 5; \
@@ -85,7 +85,7 @@ run-all:
 	  sleep 1; _i=$$((_i+1)); \
 	  if [ $$_i -ge 30 ]; then \
 	    echo "❌  API non démarrée — vérifiez les logs ci-dessus."; \
-	    echo "    Debug : python -m uvicorn api.main:app --host 0.0.0.0 --port 8000"; \
+	    echo "    Debug : python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000"; \
 	    exit 1; \
 	  fi; \
 	done && \
@@ -93,7 +93,7 @@ run-all:
 	echo "  MLflow  : http://localhost:5001" && \
 	echo "  Front   : http://localhost:8501" && \
 	echo "  (Ctrl+C pour tout arrêter)" && \
-	streamlit run frontend/app.py
+	streamlit run src/frontend/app.py
 
 mlflow:
 	@echo "→ Démarrage MLflow (port 5001)…"
@@ -124,40 +124,40 @@ docker-logs:
 
 news:
 	@echo "→ Collecte des news RSS — DB : $(DB)"
-	@python scripts/collect_news.py --once
+	@python ops/scripts/collect_news.py --once
 
 history:
-	@python scripts/fetch_history.py
+	@python ops/scripts/fetch_history.py
 
 collect:
 	@echo "→ Collecte OHLCV incrémentale — exchanges : $(EXCHANGES)  DB : $(DB)"
-	@python main.py --exchanges $(EXCHANGES)
+	@python -m src.main --exchanges $(EXCHANGES)
 
 collect-schedule:
 	@echo "→ Collecte OHLCV planifiée (quotidienne 09:00) — exchanges : $(EXCHANGES)  DB : $(DB)"
-	@python main.py --schedule --exchanges $(EXCHANGES)
+	@python -m src.main --schedule --exchanges $(EXCHANGES)
 
 ticker:
 	@echo "→ Ticker temps réel — exchanges : $(EXCHANGES)  durée : $(RUNTIME)s  DB : $(DB)"
-	@python main.py --ticker --exchanges $(EXCHANGES) --runtime $(RUNTIME)
+	@python -m src.main --ticker --exchanges $(EXCHANGES) --runtime $(RUNTIME)
 
 collect-live:
 	@echo "→ Collecte incrémentale + Ticker en parallèle — exchanges : $(EXCHANGES)  DB : $(DB)"
-	@python main.py --exchanges $(EXCHANGES) &
-	@python main.py --ticker --exchanges $(EXCHANGES) --runtime $(RUNTIME)
+	@python -m src.main --exchanges $(EXCHANGES) &
+	@python -m src.main --ticker --exchanges $(EXCHANGES) --runtime $(RUNTIME)
 
 # ── Base de données ───────────────────────────────────────────
 
 db-migrate:
 	@echo "→ Migration SQLite → PostgreSQL…"
-	@python scripts/migrate_to_postgres.py
+	@python ops/scripts/migrate_to_postgres.py
 
 db-check:
-	@python -c "from api.dependencies import engine; print('DB connectée :', engine.url)"
+	@python -c "from src.api.dependencies import engine; print('DB connectée :', engine.url)"
 
 db-inspect:
 	@echo "→ Inspection de la base de données (DB : $(DB))…"
-	@python scripts/check_db.py
+	@python ops/scripts/check_db.py
 
 # ── Tests ─────────────────────────────────────────────────────
 
@@ -171,7 +171,7 @@ test-paper:
 	@python -m pytest tests/test_paper_trading.py -v
 
 test-cov:
-	@python -m pytest tests/ --cov=src --cov=api --cov-report=term-missing
+	@python -m pytest tests/ --cov=src --cov-report=term-missing
 
 # ── Aide ──────────────────────────────────────────────────────
 

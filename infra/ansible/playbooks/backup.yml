@@ -1,0 +1,48 @@
+---
+# Backup playbook — deploys the canonical backup job.
+#
+# The stack runs on SQLite (data/crypto_data.db), not TimescaleDB. The backup
+# tars the data dir + .env + Grafana state and publishes the node-exporter
+# textfile freshness metric consumed by the Grafana "alert-backup-stale" rule.
+# See infra/backup/backup.sh for the script itself.
+
+- name: Deploy Crypto Bot backup job
+  hosts: vps
+  become: true
+  vars_files:
+    - ../group_vars/vps.yml
+
+  tasks:
+    - name: Create backup directory
+      file:
+        path: /opt/backups
+        state: directory
+        owner: root
+        group: root
+        mode: "0750"
+
+    - name: Install canonical backup script
+      copy:
+        src: ../../backup/backup.sh
+        dest: /opt/backups/backup.sh
+        owner: root
+        group: root
+        mode: "0750"
+
+    - name: Schedule daily backup (root crontab)
+      cron:
+        name: cryptobot-backup
+        user: root
+        minute: "0"
+        hour: "3"
+        job: "/opt/backups/backup.sh >> /var/log/cryptobot-backup.log 2>&1"
+
+    - name: Remove legacy ubuntu backup cron (timescaledb regression)
+      cron:
+        name: cryptobot-backup
+        user: "{{ deploy_user }}"
+        state: absent
+
+    - name: Run backup once to refresh freshness metric
+      command: /opt/backups/backup.sh
+      changed_when: true

@@ -1,0 +1,18 @@
+apiVersion: 1
+providers:
+  - name: business
+    folder: Business
+    type: file
+    updateIntervalSeconds: 30
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards/business
+      foldersFromFilesStructure: false
+  - name: technical
+    folder: Technical
+    type: file
+    updateIntervalSeconds: 30
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards/technical
+      foldersFromFilesStructure: false

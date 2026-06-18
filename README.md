@@ -6,10 +6,10 @@ Pipeline ETL multi-exchange → base de données → API REST → dashboard Stre
 ## Installation
 
 ```bash
-make setup
+bash ops/setup.sh
 ```
 
-`setup.sh` détecte l'OS et installe les dépendances adaptées :
+`ops/setup.sh` détecte l'OS et installe les dépendances adaptées :
 
 | OS | Support |
 |---|---|
@@ -17,7 +17,7 @@ make setup
 | Linux (Debian/Ubuntu) | apt — `python3-dev libpq-dev` |
 | Linux (RedHat) | yum — `python3-devel postgresql-devel` |
 | Linux (Arch / Alpine) | pacman / apk |
-| Windows | Non supporté nativement — utiliser WSL2 ou `make docker` |
+| Windows | Non supporté nativement — utiliser WSL2 ou Docker |
 
 Le script vérifie Python 3.10+, crée un `.venv` si nécessaire, installe `requirements.txt` et copie `.env.example` → `.env`.  
 Éditez `.env` avec vos clés API avant de lancer les collectes.
@@ -25,32 +25,40 @@ Le script vérifie Python 3.10+, crée un `.venv` si nécessaire, installe `requ
 ## Démarrage rapide
 
 ```bash
-make setup      # Installation (première fois)
+bash ops/setup.sh                 # Installation (première fois)
 
-make run        # API (8000) + Streamlit (8501)
-make run-all    # API + MLflow (5001) + Streamlit — tout en un
-make docker     # Stack complète via Docker
-make help       # Toutes les commandes disponibles
+# Stack complète via Docker (recommandé) :
+docker compose up --build         # API (8000) + Frontend (8501) + MLflow (5001) + observabilité
 ```
 
-## Commandes make
+## Commandes
+
+> Par défaut la base est SQLite. Pour PostgreSQL, définir `POSTGRES_URL` (ou `CRYPTO_BOT_DB_URL`) dans `.env`.
 
 ### Local (sans Docker)
 
 ```bash
-make run                    # API FastAPI + Streamlit (SQLite par défaut)
-make run DB=postgres        # Idem avec PostgreSQL
-make run-all                # API + MLflow + Streamlit en un seul processus
-make stop                   # Arrête l'API (Ctrl+C arrête Streamlit)
-make mlflow                 # Lance MLflow seul sur le port 5001
+# API FastAPI (port 8000)
+python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000
+
+# Frontend Streamlit (port 8501)
+streamlit run src/frontend/app.py
+
+# MLflow seul (port 5001)
+mlflow server --host 0.0.0.0 --port 5001 \
+  --backend-store-uri sqlite:///mlflow-local.db \
+  --default-artifact-root ./mlflow-artifacts --allowed-hosts "*"
+
+# Arrêter l'API lancée en arrière-plan
+pkill -f "uvicorn src.api.main:app"
 ```
 
 ### Docker
 
 ```bash
-make docker                 # Build et démarre tous les services
-make docker-stop            # Arrête tous les conteneurs
-make docker-logs            # Logs en temps réel
+docker compose up --build         # Build et démarre tous les services
+docker compose down               # Arrête tous les conteneurs
+docker compose logs -f            # Logs en temps réel
 ```
 
 | Service  | URL                        |
@@ -62,30 +70,29 @@ make docker-logs            # Logs en temps réel
 ### Données
 
 ```bash
-make collect                               # OHLCV incrémental (binance)
-make collect EXCHANGES="binance kraken"
-make collect-schedule                      # Planifié quotidien
-make ticker                                # Ticker temps réel (120s)
-make collect-live                          # OHLCV + ticker en parallèle
-make news                                  # Collecte RSS (une passe)
-make history                               # Historique OHLCV complet
+python -m src.main --exchanges binance                    # OHLCV incrémental (binance)
+python -m src.main --exchanges binance kraken             # Plusieurs exchanges
+python -m src.main --schedule --exchanges binance         # Planifié quotidien (09:00)
+python -m src.main --ticker --exchanges binance --runtime 120   # Ticker temps réel (120s)
+python ops/scripts/collect_news.py --once                 # Collecte RSS (une passe)
+python ops/scripts/fetch_history.py                       # Historique OHLCV complet
 ```
 
 ### Base de données
 
 ```bash
-make db-check               # Vérifie la connexion active
-make db-inspect             # Inspecte le contenu
-make db-migrate             # Migre SQLite → PostgreSQL
+python -c "from src.api.dependencies import engine; print('DB :', engine.url)"   # Connexion active
+python ops/scripts/check_db.py                            # Inspecte le contenu
+python ops/scripts/migrate_to_postgres.py                 # Migre SQLite → PostgreSQL
 ```
 
 ### Tests
 
 ```bash
-make tests        # Tous les tests
-make test-api     # Endpoints API
-make test-paper   # Paper trading
-make test-cov     # Couverture de code
+python -m pytest tests/ -v                                # Tous les tests
+python -m pytest tests/test_api.py -v                     # Endpoints API
+python -m pytest tests/test_paper_trading.py -v           # Paper trading
+python -m pytest tests/ --cov=src --cov-report=term-missing   # Couverture de code
 ```
 
 ## Variables d'environnement
@@ -133,40 +140,32 @@ Pipeline ETL multi-exchange (ccxt) : OHLCV incrémental, ticker temps réel, his
 ## Structure du projet
 
 ```
-├── api/
-│   ├── routers/          # Endpoints FastAPI (ohlcv, market, signals, news, ml, alerts, paper_trading)
-│   ├── schemas/          # Schémas Pydantic
-│   ├── dependencies.py   # Session SQLAlchemy
-│   └── main.py           # App FastAPI + lifespan
-├── frontend/
-│   ├── pages/            # 6 pages Streamlit
-│   ├── components/       # Composants réutilisables
-│   ├── api_client.py     # Client HTTP vers l'API
-│   └── app.py            # Point d'entrée Streamlit
-├── mlflow/
-│   └── Dockerfile        # Image MLflow pour Docker
-├── src/
+├── src/                  # Tout le code applicatif
+│   ├── api/              # API FastAPI (routers, schemas, dependencies, main.py, Dockerfile)
+│   ├── frontend/         # UI Streamlit (pages, components, api_client, app.py, Dockerfile)
 │   ├── collectors/       # OHLCV, ticker, news RSS, Fear & Greed, WebSocket
 │   ├── etl/              # Pipeline Extract → Transform → Load
 │   ├── models/           # Modèles SQLAlchemy
 │   ├── paper_trading/    # Moteur paper trading (PaperTrader)
-│   ├── services/         # LivePriceCache (singleton WS)
+│   ├── services/         # LivePriceCache (singleton WS), clients exchanges
 │   ├── analytics/        # Indicateurs techniques
 │   ├── notifications/    # Alertes email
-│   └── ml/
-│       ├── backtesting/
-│       ├── feature_engineering/
-│       ├── models/
-│       ├── nlp/
-│       └── mlflow_utils.py
-├── config/               # settings.py, config.yaml
-├── docs/                 # Documentation technique
-├── scripts/              # fetch_history.py, collect_news.py, migrate_to_postgres.py…
+│   ├── ml/               # backtesting, feature_engineering, models, nlp
+│   ├── config/           # settings.py (Config/YAML), api_keys.py, config.yaml
+│   ├── collector/        # Dockerfile collecte planifiée
+│   ├── logger_settings.py
+│   └── main.py           # Point d'entrée collecte OHLCV
+├── ops/                  # Exploitation hors-app
+│   ├── scripts/          # fetch_history.py, collect_news.py, migrate_to_postgres.py…
+│   ├── notebooks/        # Notebooks d'analyse
+│   ├── mlflow/           # Dockerfile + entrypoint MLflow
+│   └── setup.sh          # Script d'installation multi-OS
+├── docs/                 # Documentation technique (+ SAUVEGARDES.md)
 ├── tests/                # Suite de tests pytest
-├── setup.sh              # Script d'installation multi-OS
-├── Makefile
+├── infra/                # Observabilité, Ansible, Nginx (déploiement VPS)
+├── data/                 # Données (SQLite, raw/processed)
 ├── docker-compose.yml
-├── main.py               # Point d'entrée collecte OHLCV
+├── pyproject.toml
 └── requirements.txt
 ```
 

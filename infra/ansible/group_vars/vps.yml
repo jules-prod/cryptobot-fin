@@ -1,0 +1,69 @@
+# Group variables for VPS servers
+---
+# System
+timezone: Europe/Paris
+swap_size: 2G
+deploy_user: ubuntu
+
+# Docker
+docker_compose_dir: /home/ubuntu/cryptobot
+
+# Domain / SSL
+domain_name: "dtsc-cryptobot.fr"
+domain_aliases:
+  - "www.dtsc-cryptobot.fr"
+letsencrypt_email: "admin@dtsc-cryptobot.fr"
+
+# Nginx (handled by host nginx, not Docker nginx)
+nginx_worker_processes: auto
+nginx_worker_connections: 1024
+nginx_client_max_body_size: 50m
+
+# Cloudflare proxy IPs (empty = direct access, no CF in front)
+cloudflare_ip_ranges: []
+
+# Firewall (UFW)
+ufw_allowed_ports:
+  - "22/tcp"
+  - "80/tcp"
+  - "443/tcp"
+
+# Fail2Ban
+fail2ban_maxretry: 5
+fail2ban_bantime: 3600
+fail2ban_findtime: 600
+
+# Backups
+backup_retention_days: 30
+backup_weekly_retention: 4
+backup_bucket: backups
+backup_schedule: "0 3 * * *"  # 3 AM daily
+
+# Monitoring
+healthcheck_url: "/health"
+healthcheck_interval: 60
+
+# Application (aligned with current docker-compose.yml — 4 services)
+app_services:
+  - mlflow
+  - api
+  - frontend
+  - collector
+
+# Observability admin credentials (from GH Actions extra-vars via secrets)
+grafana_admin_user: "{{ lookup('env', 'GRAFANA_ADMIN_USER') | default('admin', true) | trim }}"
+grafana_admin_password: "{{ lookup('env', 'GRAFANA_ADMIN_PASSWORD') | default('changeme', true) | trim }}"
+
+# MLflow credentials — SOURCE UNIQUE = identifiants Grafana (login unique).
+# Le htpasswd-mlflow (nginx), le .env du VPS et l'auth native MLflow
+# (--app-name basic-auth) utilisent tous le MÊME couple que Grafana.
+# Fallback sain hérité de grafana_admin_* (défaut admin/changeme).
+mlflow_tracking_username: "{{ grafana_admin_user }}"
+mlflow_tracking_password: "{{ grafana_admin_password }}"
+
+# SMTP / alerting secrets (from GH Actions secrets via environment)
+smtp_host: "{{ lookup('env', 'SMTP_HOST') | default('smtp.gmail.com:587', true) | trim }}"
+smtp_user: "{{ lookup('env', 'SMTP_USER') | default('', true) | trim }}"
+smtp_password: "{{ lookup('env', 'SMTP_PASSWORD') | default('', true) | trim }}"
+smtp_from: "{{ lookup('env', 'SMTP_FROM') | default('', true) | trim }}"
+alert_email_to: "{{ lookup('env', 'ALERT_EMAIL_TO') | default('douirx@gmail.com', true) | trim }}"

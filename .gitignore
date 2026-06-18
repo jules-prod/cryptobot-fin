@@ -1,34 +1,26 @@
 # ao orchestrator
 .ao/
+.claude/
 
-# Secrets et environnement
+# Secrets & environnement
 .env
 .venv/
 
 # Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
 
 # Logs
 logs/
 *.log
 
-# Sauvegardes de base de données
-data/backups/
-*.sql
-*.dump
-*.csv
-*.json
-
-# Fichiers de test et couverture
+# Tests & couverture
 .pytest_cache/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-
-# Rapport de couverture
+.mypy_cache/
+.ruff_cache/
 htmlcov/
 .coverage
 *.cover
@@ -37,9 +29,19 @@ htmlcov/
 .vscode/
 .idea/
 
+# Sauvegardes / dumps de base de données
+data/backups/
+*.sql
+*.dump
+
+# Artefacts MLflow locaux (régénérés en dev, non versionnés)
+mlflow-local.db
+mlflow-artifacts/
+mlruns/
+
+# Notebooks de scratch
+ntbk_test_code.ipynb
 analytics_plan
 
-ntbk_test_code.ipynb
-
-# Track infra files (Grafana dashboards, Terraform, k8s, etc.)
+# Track infra files (Grafana dashboards JSON, Ansible, Prometheus, etc.)
 !**/infra/**

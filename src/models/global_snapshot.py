@@ -1,7 +1,6 @@
 # models/global_snapshot.py
 
 from sqlalchemy import Column, Integer, Float, DateTime
-from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
 import sys
 from pathlib import Path

@@ -14,7 +14,7 @@ Usage::
     results = model.cross_validate(X, y, n_splits=5)
 """
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -31,7 +31,7 @@ try:
 except ImportError:
     _XGBOOST_AVAILABLE = False
 
-from logger_settings import logger
+from src.logger_settings import logger
 
 # Types de modèles disponibles
 _MODEL_TYPES = ("dummy", "logistic_regression", "random_forest", "xgboost")

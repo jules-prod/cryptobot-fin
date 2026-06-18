@@ -46,10 +46,14 @@ jobs:
           ALERT_EMAIL_PASSWORD: ${{ secrets.ALERT_EMAIL_PASSWORD }}
           ALERT_SMTP_HOST: smtp.gmail.com
           ALERT_SMTP_PORT: "587"
+          # MLflow tracking en CI : DagsHub (MLflow hébergé, joignable depuis les
+          # runners GitHub). La prod utilise un MLflow self-hosted derrière nginx
+          # (https://dtsc-cryptobot.fr/mlflow), inaccessible depuis le CI. Les deux
+          # cibles sont donc volontairement distinctes. Cf infra/README.md.
           MLFLOW_TRACKING_URI: https://dagshub.com/Marivel75/_Crypto_Bot.mlflow
           MLFLOW_TRACKING_USERNAME: Marivel75
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
-        run: python main.py --exchanges kraken
+        run: python -m src.main --exchanges kraken
 
       - name: Run ticker temps réel (${{ inputs.ticker_runtime || 15 }} min)
         if: ${{ inputs.ticker == true }}
@@ -59,4 +63,4 @@ jobs:
           BINANCE_API_SECRET: ${{ secrets.BINANCE_API_SECRET }}
           COINMARKETCAP_API_KEY: ${{ secrets.COINMARKETCAP_API_KEY }}
           CRYPTORANK_API_KEY: ${{ secrets.CRYPTORANK_API_KEY }}
-        run: python main.py --ticker --runtime ${{ inputs.ticker_runtime || 15 }} --exchanges kraken
+        run: python -m src.main --ticker --runtime ${{ inputs.ticker_runtime || 15 }} --exchanges kraken

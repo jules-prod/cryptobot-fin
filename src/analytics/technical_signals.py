@@ -1,6 +1,5 @@
 import pandas as pd
-from typing import Dict, List, Tuple, Optional
-from logger_settings import logger
+from typing import Dict, List
 
 
 class TechnicalSignals:

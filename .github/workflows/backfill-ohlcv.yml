@@ -1,0 +1,92 @@
+name: Backfill OHLCV (clean rebuild)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [prod]
+    paths:
+      - ".github/workflows/backfill-ohlcv.yml"
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Configure SSH
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          VPS_HOST=$(printf '%s' "$VPS_HOST" | tr -d '\n\r\t ')
+          echo "VPS_HOST_CLEAN=$VPS_HOST" >> $GITHUB_ENV
+          ssh-keyscan -T 30 -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Ensure api is up
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose up -d api && sleep 10 && docker compose ps api'
+
+      - name: Wipe binance OHLCV
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose exec -T api python -c "
+          import sqlite3
+          con = sqlite3.connect(\"/app/data/processed/crypto_data.db\")
+          for s in [\"BTC/USDT\",\"ETH/USDT\",\"SOL/USDT\",\"ADA/USDT\",\"BNB/USDT\"]:
+              con.execute(\"DELETE FROM ohlcv WHERE exchange=? AND symbol=?\", (\"binance\", s))
+          con.commit()
+          print(\"Wiped\")
+          "'
+
+      - name: Backfill per (symbol, tf) — separate processes to avoid OOM
+        run: |
+          for sym in "BTC/USDT" "ETH/USDT" "SOL/USDT" "ADA/USDT" "BNB/USDT"; do
+            for tfd in "1h:365" "4h:730" "1d:1825"; do
+              tf="${tfd%%:*}"; days="${tfd##*:}"
+              echo "=== Backfilling $sym $tf ($days days) ==="
+              ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN "cd ~/cryptobot && docker compose exec -T -e SYM='$sym' -e TF='$tf' -e DAYS='$days' api python - <<'PYEOF'
+          import ccxt, sqlite3, time, uuid, os
+          from datetime import datetime, timezone, timedelta
+          SYM=os.environ['SYM']; TF=os.environ['TF']; DAYS=int(os.environ['DAYS'])
+          con=sqlite3.connect('/app/data/processed/crypto_data.db'); cur=con.cursor()
+          ex=ccxt.binance({'enableRateLimit': True})
+          since=int((datetime.now(timezone.utc)-timedelta(days=DAYS)).timestamp()*1000)
+          fetched=0
+          while True:
+              batch=ex.fetch_ohlcv(SYM, TF, since=since, limit=1000)
+              if not batch: break
+              now_iso=datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+              rows=[]
+              for c in batch:
+                  ts=datetime.fromtimestamp(c[0]/1000, tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+                  o,h,l,cl,v=c[1],c[2],c[3],c[4],c[5]
+                  rows.append((str(uuid.uuid4()), ts, SYM, TF, o,h,l,cl,v, h-l, cl-o, ((cl-o)/o*100) if o else 0, ts[:10], 'binance', now_iso, now_iso))
+              cur.executemany('INSERT INTO ohlcv (id, timestamp, symbol, timeframe, open, high, low, close, volume, price_range, price_change, price_change_pct, date, exchange, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', rows)
+              con.commit()
+              since=batch[-1][0]+1; fetched+=len(batch)
+              if len(batch)<1000: break
+              time.sleep(0.2)
+          print(f'{SYM} {TF}  fetched={fetched}')
+          PYEOF"
+            done
+          done
+
+      - name: Verify
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose exec -T api python -c "
+          import sqlite3
+          con = sqlite3.connect(\"/app/data/processed/crypto_data.db\")
+          print(\"=== BTC 1h binance anomalous days (!= 24) ===\")
+          rows = con.execute(\"SELECT DATE(timestamp), COUNT(*) FROM ohlcv WHERE symbol=\\\"BTC/USDT\\\" AND timeframe=\\\"1h\\\" AND exchange=\\\"binance\\\" GROUP BY DATE(timestamp) HAVING COUNT(*) != 24 ORDER BY DATE(timestamp)\").fetchall()
+          if not rows: print(\"  ALL CLEAN ✅\")
+          else:
+              for d,n in rows: print(f\"  {d}  n={n}\")
+          print()
+          for s, tf, n, mn, mx in con.execute(\"SELECT symbol, timeframe, COUNT(*), MIN(timestamp), MAX(timestamp) FROM ohlcv WHERE exchange=\\\"binance\\\" GROUP BY symbol, timeframe ORDER BY symbol, timeframe\").fetchall():
+              print(f\"  {s:10s} {tf:3s}  n={n:6d}  min={mn}  max={mx}\")
+          "'
+
+      - name: Restart api + frontend
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose restart api frontend && sleep 6'

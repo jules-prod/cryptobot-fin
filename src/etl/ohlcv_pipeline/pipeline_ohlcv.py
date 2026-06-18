@@ -2,11 +2,14 @@
 Module Pipeline pour le pipeline ETL : orchestrer le processus ETL complet en coordonnant les composants Extract, Transform et Load.
 """
 
+import time
+
 import pandas as pd
 from typing import List, Dict, Optional
 from dataclasses import dataclass
 from datetime import datetime
-from logger_settings import logger
+from src.logger_settings import logger
+from src.metrics import etl_duration_seconds
 from src.etl.ohlcv_pipeline.extractor import OHLCVExtractor, ExtractionError
 from src.etl.ohlcv_pipeline.transformer import OHLCVTransformer, TransformationError
 from src.etl.ohlcv_pipeline.loader import OHLCVLoader, LoadingError
@@ -205,17 +208,22 @@ class ETLPipelineOHLCV:
             limit: Nombre de bougies par symbole
         """
         results = {}
+        _t0 = time.monotonic()
+        try:
+            for symbol in symbols:
+                try:
+                    results[symbol] = self.run(symbol, timeframe, limit)
+                except Exception as e:
+                    error_result = PipelineResult(symbol, timeframe)
+                    error_result.fail(str(e))
+                    results[symbol] = error_result
+                    logger.error(f"❌ Échec du pipeline pour {symbol}: {e}")
 
-        for symbol in symbols:
-            try:
-                results[symbol] = self.run(symbol, timeframe, limit)
-            except Exception as e:
-                error_result = PipelineResult(symbol, timeframe)
-                error_result.fail(str(e))
-                results[symbol] = error_result
-                logger.error(f"❌ Échec du pipeline pour {symbol}: {e}")
-
-        return results
+            return results
+        finally:
+            etl_duration_seconds.labels(pipeline="ohlcv").observe(
+                time.monotonic() - _t0
+            )
 
     def run_extract_transform_batch(
         self, symbols: List[str], timeframe: str, limit: int = 100

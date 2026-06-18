@@ -2,8 +2,8 @@
 Gère l'extraction des données OHLCV depuis les exchanges.
 """
 
-from typing import List, Optional
-from logger_settings import logger
+from typing import List
+from src.logger_settings import logger
 
 
 class ExtractionError(Exception):

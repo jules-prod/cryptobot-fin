@@ -1,0 +1,139 @@
+@startuml DP05-pipeline-etl
+' ============================================================
+' CryptoBot — PlantUML Shared Skin & Stereotypes
+' ============================================================
+
+skinparam backgroundColor white
+skinparam defaultFontName "Segoe UI, Helvetica, Arial, sans-serif"
+skinparam defaultFontSize 16
+skinparam defaultFontColor #333333
+skinparam shadowing false
+skinparam roundCorner 6
+skinparam nodesep 35
+skinparam ranksep 50
+skinparam padding 3
+scale max 1920*1080
+
+skinparam component {
+  BackgroundColor #F3EEFF
+  BorderColor #7C5CFC
+  FontColor #333333
+  ArrowColor #4A6FA5
+  StereotypeFontColor #7C5CFC
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #4A6FA5
+  FontColor #333333
+}
+skinparam rectangle {
+  BackgroundColor #E8F0FB
+  BorderColor #4A6FA5
+  FontColor #333333
+}
+skinparam database {
+  BackgroundColor #ECFDF5
+  BorderColor #34A853
+  FontColor #333333
+}
+skinparam note {
+  BackgroundColor #FEF3E8
+  BorderColor #E8943A
+  FontColor #333333
+}
+skinparam legend {
+  BackgroundColor #F5F5F5
+  BorderColor #CCCCCC
+  FontColor #333333
+}
+
+left to right direction
+
+title CryptoBot — Pipeline ETL (simplifié) — adaptation 02
+caption GitHub Actions (cron 08:00 UTC) | Binance · Kraken · Coinbase | CoinGecko | RSS — stockage corrigé : SQLite (ex-Supabase)
+
+' ============================================================
+' Sources de données
+' ============================================================
+package "Sources de données" as sources #E8F0FB {
+  rectangle "Binance\nREST + WebSocket" as binance
+  rectangle "Kraken\nREST public" as kraken
+  rectangle "Coinbase\nREST public" as coinbase
+  rectangle "CoinGecko\nmarché global\ntop cryptos" as coingecko
+  rectangle "Alternative.me\nFear & Greed" as fng
+  rectangle "RSS (3 feeds)\ndecrypt · cointelegraph\ncryptonews" as rss
+}
+
+' ============================================================
+' Collecte
+' ============================================================
+package "Collecte" as collecte #FEF3E8 {
+  component "WSPriceCollector\n<<collector>>\n(Binance WebSocket\nprix temps réel)" as ws
+  component "ExchangeFactory\n<<service>>\nbinance | kraken | coinbase" as factory
+  component "MarketDataCollector\n<<collector>>\n(CoinGecko)" as mdc
+  component "NewsCollector\n+ FearGreedCollector\n<<collector>>" as news
+  component "OHLCVCollector\n+ TickerCollector\n<<collector>>\n(par exchange)" as ohlcvc
+}
+
+note right of factory
+  get_supported_exchanges()
+  ["binance","kraken","coinbase"]
+  Config par défaut : les 3 actifs
+end note
+
+' ============================================================
+' Transform & Qualité
+' ============================================================
+package "Transform & Qualité" as transform #EFE9FB {
+  component "ETL OHLCV\n<<transformer>>\nExtract → Transform\n→ Validate → Load\n(retry x3, batch 1000)" as etl_ohlcv
+  component "ETL MarketData\n<<transformer>>\nExtract → Transform\n→ Load (ORM bulk)" as etl_md
+  component "NLP Pipeline\n<<transformer>>\nVADER sentiment\nTF-IDF keywords\n8 topics · 37 entités" as nlp
+  component "DataValidatorOHLCV\n<<service>>\nhigh >= low\nvolume > 0\ncheck timestamps" as validator
+}
+
+' ============================================================
+' Stockage — SQLite (corrigé, ex-PostgreSQL/Supabase)
+' ============================================================
+database "SQLite\ndata/processed/crypto_data.db\n\nohlcv\nticker_snapshots\nglobal_market_*\ntop_crypto_*\nnews_articles\nfear_greed_index" as sqlite #ECFDF5
+
+' ============================================================
+' Flux Sources -> Collecte
+' ============================================================
+binance --> ws : WebSocket
+binance --> factory
+kraken --> factory
+coinbase --> factory
+coingecko --> mdc
+fng --> news
+rss --> news
+factory --> ohlcvc
+
+' ============================================================
+' Flux Collecte -> Transform
+' ============================================================
+ws --> etl_ohlcv : prix live
+ohlcvc --> etl_ohlcv
+mdc --> etl_md
+news --> nlp
+etl_ohlcv --> validator : validation
+
+' ============================================================
+' Flux Transform -> Stockage
+' ============================================================
+etl_ohlcv --> sqlite : INSERT ohlcv\nticker_snapshots
+etl_md --> sqlite : INSERT global_market_*\ntop_crypto_*
+nlp --> sqlite : INSERT news_articles\nfear_greed_index
+
+' ============================================================
+' Légende (calquée sur le 02)
+' ============================================================
+legend bottom right
+  |= Couleur    |= Rôle                  |
+  | <#E8F0FB>   | Sources de données      |
+  | <#FEF3E8>   | Collecte                |
+  | <#EFE9FB>   | Transform / NLP         |
+  | <#ECFDF5>   | Stockage (SQLite)       |
+  |= Corrigé    | ex-PostgreSQL (Supabase) → SQLite |
+endlegend
+
+@enduml

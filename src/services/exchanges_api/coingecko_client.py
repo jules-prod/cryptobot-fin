@@ -1,7 +1,6 @@
 import requests
-from logger_settings import logger
+from src.logger_settings import logger
 from typing import Optional, Dict, List
-from functools import wraps
 import time
 
 

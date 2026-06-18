@@ -1,0 +1,132 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [prod]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    name: CI Gate
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Deploy via Ansible
+    runs-on: ubuntu-latest
+    needs: ci
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install "ansible-core>=2.16,<2.18" ansible-lint passlib bcrypt
+          ansible-galaxy collection install community.docker community.general ansible.posix
+
+      - name: Configure SSH
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          for i in 1 2 3; do
+            ssh-keyscan -T 30 -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null && break
+            echo "ssh-keyscan retry $i"
+            sleep 5
+          done
+
+      - name: Lint playbooks
+        run: ansible-lint infra/ansible/playbooks/ || echo "ansible-lint warnings (non-blocking)"
+        continue-on-error: true
+
+      - name: Render inventory with VPS_HOST
+        env:
+          VPS_HOST_RAW: ${{ secrets.VPS_HOST }}
+        working-directory: infra/ansible
+        run: |
+          # Trim whitespace/newlines to avoid INI parser breaking on multi-line
+          VPS_HOST=$(printf '%s' "$VPS_HOST_RAW" | tr -d '\n\r\t ')
+          export VPS_HOST
+          envsubst < inventories/production.ini > inventories/production.rendered.ini
+          # Sanity check : show structure without IP
+          awk '/ansible_host=/{ sub(/ansible_host=[^ ]+/, "ansible_host=<REDACTED>") } 1' inventories/production.rendered.ini
+
+      - name: Run deploy playbook
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+          GRAFANA_ADMIN_USER: ${{ secrets.GRAFANA_ADMIN_USER }}
+          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+          MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
+        working-directory: infra/ansible
+        run: |
+          ansible-playbook -i inventories/production.rendered.ini playbooks/deploy.yml -v
+
+      - name: Diagnose VPS post-deploy
+        if: always()
+        env:
+          VPS_HOST_RAW: ${{ secrets.VPS_HOST }}
+        run: |
+          VPS_HOST=$(printf '%s' "$VPS_HOST_RAW" | tr -d '\n\r\t ')
+          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST 'bash -s' <<"DIAG"
+          set +e
+          echo "=== docker compose ps ==="
+          cd /home/ubuntu/cryptobot && docker compose ps -a
+          echo "=== nginx-exporter logs ==="
+          docker compose logs --tail=40 nginx-exporter 2>&1 | tail -50
+          echo "=== host nginx test ==="
+          sudo ss -tlnp | grep -E "8080|9113" || echo "no listeners"
+          echo "=== local curl to nginx stub_status ==="
+          curl -sS -o /dev/null -w "127.0.0.1:8080 HTTP=%{http_code}\n" http://127.0.0.1:8080/nginx_status
+          curl -sS http://127.0.0.1:8080/nginx_status 2>&1 | head -5
+          echo "=== local curl to nginx-exporter ==="
+          curl -sS -o /dev/null -w "127.0.0.1:9113 HTTP=%{http_code}\n" http://127.0.0.1:9113/metrics
+          curl -sS http://127.0.0.1:9113/metrics 2>&1 | grep -E "^nginx_(up|connections_active)" | head -5
+          echo "=== nginx -t ==="
+          sudo nginx -t 2>&1
+          echo "=== cryptobot.conf head ==="
+          sudo cat /etc/nginx/sites-enabled/cryptobot.conf 2>&1 | head -20
+          echo "=== ufw status ==="
+          sudo ufw status numbered | head -30
+          echo "=== other services (last 30 lines per) ==="
+          for svc in api frontend collector mlflow prometheus loki tempo otel-collector grafana promtail; do
+            echo "--- $svc ---"
+            docker compose logs --tail=30 "$svc" 2>&1 | tail -40
+          done
+          echo "=== last 30 lines of dmesg (OOM kills?) ==="
+          sudo dmesg | tail -30
+          DIAG
+
+      - name: External smoke test
+        run: |
+          set -euo pipefail
+          echo "--- Smoke test https://dtsc-cryptobot.fr/health ---"
+          for i in $(seq 1 12); do
+            if curl -fsS --max-time 10 https://dtsc-cryptobot.fr/health | grep -q '"status":"ok"'; then
+              echo "Health OK"
+              exit 0
+            fi
+            echo "Waiting for health... ($i/12)"
+            sleep 5
+          done
+          echo "FAIL: /health did not return ok within 60s" >&2
+          curl -v https://dtsc-cryptobot.fr/health || true
+          exit 1

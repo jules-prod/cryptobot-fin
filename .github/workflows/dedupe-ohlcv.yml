@@ -1,0 +1,45 @@
+name: Dedupe OHLCV duplicates
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [prod]
+    paths:
+      - ".github/workflows/dedupe-ohlcv.yml"
+
+jobs:
+  dedupe:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Configure SSH
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          VPS_HOST=$(printf '%s' "$VPS_HOST" | tr -d '\n\r\t ')
+          echo "VPS_HOST_CLEAN=$VPS_HOST" >> $GITHUB_ENV
+          ssh-keyscan -T 30 -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Investigate BTC 1h actual timestamps (last 20)
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose exec -T api python - <<PYEOF
+          import sqlite3
+          con = sqlite3.connect("/app/data/processed/crypto_data.db")
+          # last 20 BTC 1h binance
+          rows = con.execute("SELECT timestamp FROM ohlcv WHERE symbol=\"BTC/USDT\" AND timeframe=\"1h\" AND exchange=\"binance\" ORDER BY timestamp DESC LIMIT 20").fetchall()
+          print("=== BTC 1h binance: last 20 timestamps DESC ===")
+          for (ts,) in rows: print(f"  {ts}")
+          print()
+          # count by date
+          rows = con.execute("SELECT DATE(timestamp) AS d, COUNT(*) FROM ohlcv WHERE symbol=\"BTC/USDT\" AND timeframe=\"1h\" AND exchange=\"binance\" AND timestamp >= \"2026-05-10\" GROUP BY DATE(timestamp) ORDER BY d").fetchall()
+          print("=== BTC 1h binance count per day (since May 10) ===")
+          for d, n in rows: print(f"  {d}  n={n}")
+          PYEOF'
+
+      - name: Restart api + frontend
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@$VPS_HOST_CLEAN 'cd ~/cryptobot && docker compose restart api frontend && sleep 8 && docker compose ps'

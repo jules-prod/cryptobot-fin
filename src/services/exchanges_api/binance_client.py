@@ -4,23 +4,25 @@ Ce module fournit une interface pour interagir avec l'API Binance.
 """
 
 import ccxt
-from logger_settings import logger
-from src.config.settings import BINANCE_API_KEY, BINANCE_API_SECRET
+from src.logger_settings import logger
+from src.config.api_keys import BINANCE_API_KEY, BINANCE_API_SECRET
 
 
 class BinanceClient:
     def __init__(self):
-        # Validation des clés API avant initialisation
-        self._validate_api_keys()
+        # Si les clés sont absentes, on bascule en mode public-only.
+        # Les endpoints fetch_ohlcv/fetch_ticker ne demandent pas d'auth Binance,
+        # donc inutile d'imposer des clés pour la collecte data.
+        self._has_api_keys = self._validate_api_keys()
 
-        self.exchange = ccxt.binance(
-            {
-                "apiKey": BINANCE_API_KEY,
-                "secret": BINANCE_API_SECRET,
-                "enableRateLimit": True,
-                "options": {"defaultType": "spot"},
-            }
-        )
+        config = {
+            "enableRateLimit": True,
+            "options": {"defaultType": "spot"},
+        }
+        if self._has_api_keys:
+            config["apiKey"] = BINANCE_API_KEY
+            config["secret"] = BINANCE_API_SECRET
+        self.exchange = ccxt.binance(config)
 
         # Fonction privée pour synchroniser l'heure locale avec l'heure serveur de Binance
         self._sync_time()
@@ -43,12 +45,12 @@ class BinanceClient:
 
     def _validate_api_keys(self):
         """
-        Valide que les clés API sont définies avant d'initialiser l'échange
+        Vérifie la présence des clés API. Retourne True si présentes ET valides,
+        False si absentes (mode public-only). Lève ValueError si format invalide.
         """
         if not BINANCE_API_KEY or not BINANCE_API_SECRET:
-            error_msg = "La clé API Binance ou le secret n'est pas configuré"
-            logger.error(error_msg)
-            raise ValueError(error_msg)
+            logger.info("Clés Binance absentes : bascule en mode public-only (OHLCV/ticker)")
+            return False
 
         if not isinstance(BINANCE_API_KEY, str) or not isinstance(
             BINANCE_API_SECRET, str
@@ -58,9 +60,10 @@ class BinanceClient:
             raise ValueError(error_msg)
 
         if not BINANCE_API_KEY.strip() or not BINANCE_API_SECRET.strip():
-            error_msg = "La clé API Binance ou le secret est vide"
-            logger.error(error_msg)
-            raise ValueError(error_msg)
+            logger.info("Clés Binance vides : bascule en mode public-only (OHLCV/ticker)")
+            return False
+
+        return True
 
     def _check_exchange_initialization(self):
         """

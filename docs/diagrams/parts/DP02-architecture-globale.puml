@@ -1,0 +1,154 @@
+@startuml DP02-architecture-globale
+' ============================================================
+' CryptoBot — PlantUML Shared Skin & Stereotypes
+' ============================================================
+
+skinparam backgroundColor white
+skinparam defaultFontName "Segoe UI, Helvetica, Arial, sans-serif"
+skinparam defaultFontSize 16
+skinparam defaultFontColor #333333
+skinparam shadowing false
+skinparam roundCorner 6
+skinparam nodesep 50
+skinparam ranksep 90
+skinparam padding 6
+scale max 1920*1080
+skinparam component<<pad>> {
+  BackgroundColor transparent
+  BorderColor transparent
+  FontColor transparent
+  StereotypeFontColor transparent
+}
+
+skinparam component {
+  BackgroundColor #F3EEFF
+  BorderColor #7C5CFC
+  FontColor #333333
+  ArrowColor #4A6FA5
+  StereotypeFontColor #7C5CFC
+}
+skinparam package {
+  BackgroundColor #F5F5F5
+  BorderColor #4A6FA5
+  FontColor #333333
+}
+skinparam node {
+  BackgroundColor #F3EEFF
+  BorderColor #7C5CFC
+  FontColor #333333
+}
+skinparam database {
+  BackgroundColor #ECFDF5
+  BorderColor #34A853
+  FontColor #333333
+}
+skinparam note {
+  BackgroundColor #FEF3E8
+  BorderColor #E8943A
+  FontColor #333333
+}
+skinparam legend {
+  BackgroundColor #F5F5F5
+  BorderColor #CCCCCC
+  FontColor #333333
+}
+
+left to right direction
+
+title CryptoBot — Architecture Globale Production V2 (VPS réel — dtsc-cryptobot.fr)
+caption Adaptation du 01 : VPS (nginx + Docker) · SQLite · MLflow auto-hébergé · sécurité par route & sauvegarde
+
+' ============================================================
+' Entrée + sources externes (hors VPS)
+' ============================================================
+actor "Utilisateur\n(navigateur)" as user
+cloud "APIs Externes (REST + WebSocket)\nBinance · Kraken · Coinbase\nCoinGecko · Alternative.me · RSS" as extapi #E8F0FB
+
+' --- CI/CD (GitHub-hosted, hors VPS) ---
+actor "Développeur" as dev #E8F0FB
+package "GitHub Actions — CI / CD" as gha #E8F0FB {
+  component "CI · ci.yml\nlint · test · docker compose build" as ci
+  component "CD · deploy.yml\nDeploy via Ansible (SSH)\ndocker compose up -d" as cd
+}
+
+' ============================================================
+' VPS — nginx (bordure) + backends, tout dans la même machine
+' ============================================================
+package "VPS OVH" as vps {
+
+  node "nginx (host) — bordure\nTLS Let's Encrypt\n:80→301→:443" as nginx #FEF3E8
+  note bottom of nginx
+    UFW 22/80/443 · fail2ban
+    en-têtes HSTS / X-Frame-Options
+  end note
+
+  ' cale large invisible : étend le conteneur VPS vers la GAUCHE
+  ' (pousse le contenu à droite -> les flèches entrent à droite du titre)
+  component "................................................." <<pad>> as padL
+
+
+  package "Application (conteneurs)" as app #FEF3E8 {
+    component "collector\n<<collector>> cron 08:00 UTC\nWS Binance + REST" as collector
+    component "FastAPI api\n:8000 · /metrics" as api
+    component "Streamlit frontend\n:8501 · 6 pages" as front
+  }
+
+  database "SQLite\ncrypto_data.db (bind ./data)\nohlcv · ticker · market · news" as sqlite #ECFDF5
+
+  package "ML & MLOps" as ml #F3EEFF {
+    component "MLflow Deployment (nginx)\nauto-hébergé · backend SQLite\nstatic-prefix /mlflow" as mlflow
+  }
+
+  package "Observabilité" as obs #ECFDF5 {
+    component "Grafana + Prometheus\nLoki · Tempo · OpenTelemetry\n(détail : DP03)" as grafana
+  }
+
+  component "Backup cron 03:00\nrétention 30j / 4 sem.\n→ bucket backups" as bkp #F5F5F5
+}
+
+' ============================================================
+' Accès utilisateur — badge sécurité PAR ROUTE
+' ============================================================
+user --> nginx : HTTPS / TLS
+nginx --> front   : /\n[TLS]
+nginx --> api     : /api · /docs\n[TLS · rate-limit · public]
+nginx --> grafana : /grafana\n[TLS · 🔒 auth_basic]
+nginx --> mlflow  : /mlflow\n[TLS · 🔒 auth_basic]
+
+' ============================================================
+' CI / CD
+' ============================================================
+padL -[hidden]right-> nginx
+dev -[hidden]down-> user
+dev --> ci : git push / PR
+ci --> cd : si vert (workflow_call)
+cd --> app : deploy
+
+' ============================================================
+' Données
+' ============================================================
+extapi -left-> collector
+collector --> sqlite : écrit OHLCV / news
+front --> api : API_URL http://api:8000
+api --> sqlite : lit / écrit
+api --> mlflow : MLFLOW_TRACKING_URI
+
+' ============================================================
+' Observabilité + sauvegarde (discret)
+' ============================================================
+grafana ..> sqlite : datasource business
+bkp ..> sqlite
+bkp ..> mlflow
+
+legend bottom left
+  |= Couleur    |= Signification              |
+  | <#E8F0FB>   | APIs Externes / Infra        |
+  | <#FEF3E8>   | Bordure nginx / Application  |
+  | <#F3EEFF>   | ML / MLOps                   |
+  | <#ECFDF5>   | Stockage / Observabilité     |
+  |= Route      |= Sécurité (détail : DP04)    |
+  | / · /api    | TLS (+ rate-limit) — public  |
+  | /grafana · /mlflow | TLS · 🔒 auth_basic   |
+endlegend
+
+@enduml

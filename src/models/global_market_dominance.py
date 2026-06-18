@@ -1,7 +1,6 @@
 # models/global_market_dominance.py
 
 from sqlalchemy import Column, Integer, Float, String, ForeignKey, Index
-from sqlalchemy.ext.declarative import declarative_base
 import sys
 from pathlib import Path
 

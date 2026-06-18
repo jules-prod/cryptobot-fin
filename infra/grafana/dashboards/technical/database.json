@@ -1,0 +1,199 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "panels": [
+    {
+      "id": 1,
+      "title": "DB File Size",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "targets": [
+        {
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+          "rawQueryText": "SELECT page_count * page_size AS size FROM pragma_page_count(), pragma_page_size()",
+          "refId": "A",
+          "queryText": "SELECT page_count * page_size AS size FROM pragma_page_count(), pragma_page_size()"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decbytes",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "yellow", "value": 104857600 },
+              { "color": "red", "value": 524288000 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 2,
+      "title": "OHLCV Rows by Symbol + Timeframe",
+      "type": "bargauge",
+      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 0 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "targets": [
+        {
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+          "rawQueryText": "SELECT symbol || ' ' || timeframe AS metric, COUNT(*) AS value FROM ohlcv GROUP BY symbol, timeframe ORDER BY value DESC",
+          "refId": "A",
+          "queryText": "SELECT symbol || ' ' || timeframe AS metric, COUNT(*) AS value FROM ohlcv GROUP BY symbol, timeframe ORDER BY value DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "valueMode": "color",
+        "showUnfilled": true
+      }
+    },
+    {
+      "id": 3,
+      "title": "OHLCV Last Timestamp by Symbol",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "targets": [
+        {
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+          "rawQueryText": "SELECT symbol, timeframe, MAX(timestamp) AS last_ts FROM ohlcv GROUP BY symbol, timeframe ORDER BY symbol, timeframe",
+          "refId": "A",
+          "queryText": "SELECT symbol, timeframe, MAX(timestamp) AS last_ts FROM ohlcv GROUP BY symbol, timeframe ORDER BY symbol, timeframe"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short" },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "last_ts" },
+            "properties": [{ "id": "unit", "value": "dateTimeAsLocal" }]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "displayName": "symbol", "desc": false }]
+      }
+    },
+    {
+      "id": 4,
+      "title": "News Count Last 24h by Source",
+      "type": "piechart",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "targets": [
+        {
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+          "rawQueryText": "SELECT source, COUNT(*) AS n FROM news_articles WHERE collected_at > datetime('now','-1 day') GROUP BY source",
+          "refId": "A",
+          "queryText": "SELECT source, COUNT(*) AS n FROM news_articles WHERE collected_at > datetime('now','-1 day') GROUP BY source"
+        }
+      ],
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "pieType": "pie",
+        "legend": { "displayMode": "table", "placement": "right" }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Signals Computed Last 24h",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(increase(signals_computed_total[24h]))",
+          "legendFormat": "signals",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "purple", "value": null }]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 6,
+      "title": "Paper Trades Total",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 16 },
+      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "targets": [
+        {
+          "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+          "rawQueryText": "SELECT COUNT(*) AS value FROM paper_trades",
+          "refId": "A",
+          "queryText": "SELECT COUNT(*) AS value FROM paper_trades"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "blue", "value": null }]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none"
+      }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["cryptobot", "database"],
+  "templating": { "list": [] },
+  "time": { "from": "now-7d", "to": "now" },
+  "timepicker": {},
+  "title": "Database",
+  "uid": "cryptobot-database",
+  "version": 2
+}
