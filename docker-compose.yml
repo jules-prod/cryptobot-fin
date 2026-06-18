@@ -2,7 +2,7 @@ services:
   mlflow:
     build:
       context: .
-      dockerfile: mlflow/Dockerfile
+      dockerfile: ops/mlflow/Dockerfile
     restart: unless-stopped
     env_file: .env
     # Plus de variables MLflow ici : l'auth native est retirée (protection nginx
@@ -26,7 +26,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: api/Dockerfile
+      dockerfile: src/api/Dockerfile
     restart: unless-stopped
     env_file: .env
     environment:
@@ -56,7 +56,7 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: frontend/Dockerfile
+      dockerfile: src/frontend/Dockerfile
     restart: unless-stopped
     environment:
       API_URL: http://api:8000
@@ -77,7 +77,7 @@ services:
   collector:
     build:
       context: .
-      dockerfile: collector/Dockerfile
+      dockerfile: src/collector/Dockerfile
     restart: unless-stopped
     env_file: .env
     environment:

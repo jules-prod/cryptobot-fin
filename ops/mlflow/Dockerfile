@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
 
 RUN mkdir -p /mlflow/artifacts
 
-COPY mlflow/entrypoint.sh /usr/local/bin/mlflow-entrypoint.sh
+COPY ops/mlflow/entrypoint.sh /usr/local/bin/mlflow-entrypoint.sh
 RUN chmod +x /usr/local/bin/mlflow-entrypoint.sh
 
 EXPOSE 5000

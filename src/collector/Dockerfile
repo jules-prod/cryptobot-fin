@@ -1,3 +1,4 @@
+# Build context = repo root (.). Tout le code applicatif vit sous src/.
 FROM python:3.11-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
@@ -8,9 +9,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY main.py .
-COPY logger_settings.py .
-COPY src/ src/
-COPY config/ config/
+COPY src/ ./src/
 
-CMD ["python", "main.py", "--schedule"]
+ENV PYTHONPATH=/app \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+CMD ["python", "-m", "src.main", "--schedule"]
