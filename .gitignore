@@ -1,5 +1,6 @@
 # ao orchestrator
 .ao/
+.claude/
 
 # Secrets & environnement
 .env
